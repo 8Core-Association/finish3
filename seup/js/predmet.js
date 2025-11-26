@@ -314,9 +314,30 @@ document.addEventListener("DOMContentLoaded", function() {
 
         showMessage('Priprema omot za ispis...', 'success', 2000);
 
-        setTimeout(() => {
-            window.print();
-        }, 500);
+        const formData = new FormData();
+        formData.append('action', 'preview_omot');
+
+        fetch('', {
+            method: 'POST',
+            body: formData
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.success && data.preview_html) {
+                const printWindow = window.open('', '_blank');
+                printWindow.document.write(data.preview_html);
+                printWindow.document.close();
+
+                setTimeout(() => {
+                    printWindow.print();
+                }, 500);
+            } else {
+                showMessage('Greška pri učitavanju omota za ispis', 'error');
+            }
+        })
+        .catch(error => {
+            showMessage('Došlo je do greške pri pripremi ispisa', 'error');
+        });
     }
 
     document.getElementById('closePrintModal').addEventListener('click', closePrintInstructionsModal);
