@@ -81,23 +81,36 @@ class Digital_Signature_Detector
             $hasSignature = false;
             $signatureInfo = [];
 
-            // Check for /ByteRange and /Contents (standard PDF signature)
-            if (preg_match('/\/ByteRange\s*\[([^\]]+)\]/', $pdfContent, $byteRangeMatch) &&
-                preg_match('/\/Contents\s*<([^>]+)>/', $pdfContent, $contentsMatch)) {
-                
+            // Check for /ByteRange (standard PDF signature indicator)
+            $byteRangePos = strpos($pdfContent, '/ByteRange');
+            if ($byteRangePos !== false) {
                 $hasSignature = true;
                 $signatureInfo['type'] = 'PDF Digital Signature';
-                $signatureInfo['byte_range'] = trim($byteRangeMatch[1]);
-                $signatureInfo['contents_length'] = strlen($contentsMatch[1]) / 2; // Hex to bytes
-                
-                dol_syslog("PDF signature detected - ByteRange: " . $signatureInfo['byte_range'], LOG_INFO);
+                dol_syslog("PDF signature detected - /ByteRange found", LOG_INFO);
             }
 
-            // Check for Adobe signature fields
-            if (preg_match('/\/Type\s*\/Sig/', $pdfContent)) {
+            // Check for /Type /Sig (Adobe signature fields)
+            if (strpos($pdfContent, '/Type') !== false && strpos($pdfContent, '/Sig') !== false) {
                 $hasSignature = true;
                 $signatureInfo['adobe_signature'] = true;
                 dol_syslog("Adobe signature field detected", LOG_INFO);
+            }
+
+            // Additional check: look for /Contents with long hex string (signature)
+            $contentsPos = 0;
+            while (($contentsPos = strpos($pdfContent, '/Contents', $contentsPos)) !== false) {
+                $openBracket = strpos($pdfContent, '<', $contentsPos);
+                $closeBracket = strpos($pdfContent, '>', $openBracket);
+                if ($openBracket !== false && $closeBracket !== false) {
+                    $hexLength = $closeBracket - $openBracket - 1;
+                    if ($hexLength > 1000) {
+                        $hasSignature = true;
+                        $signatureInfo['contents_length'] = $hexLength / 2;
+                        dol_syslog("Digital signature /Contents found, hex length: " . $hexLength, LOG_INFO);
+                        break;
+                    }
+                }
+                $contentsPos++;
             }
 
             // Extract signer information from certificate data
@@ -297,45 +310,49 @@ class Digital_Signature_Detector
 
     /**
      * Extract signature date from PDF
-     * Improved to handle timezone information
+     * Binary-safe method to handle timezone information
      */
     private static function extractSignatureDate($pdfContent)
     {
-        // Look for /M field with PDF date format (with timezone)
-        if (preg_match('/\/M\s*\(D:([^\)]+)\)/', $pdfContent, $dateMatch)) {
-            $dateStr = $dateMatch[1];
+        // Look for /M field with PDF date format (binary-safe)
+        $mPos = strpos($pdfContent, '/M');
+        if ($mPos !== false) {
+            // Look for (D: after /M
+            $openParen = strpos($pdfContent, '(D:', $mPos);
+            if ($openParen !== false) {
+                $closeParen = strpos($pdfContent, ')', $openParen);
+                if ($closeParen !== false) {
+                    // Extract date string (skip "D:")
+                    $dateStr = substr($pdfContent, $openParen + 3, $closeParen - $openParen - 3);
 
-            // Parse PDF date format: YYYYMMDDHHmmSS+TZ'TZ'
-            // Example: 20250814093714+02'00'
-            if (preg_match('/(\d{4})(\d{2})(\d{2})(\d{2})(\d{2})(\d{2})([+-]\d{2}\'\d{2}\')?/', $dateStr, $parts)) {
-                $year = $parts[1];
-                $month = $parts[2];
-                $day = $parts[3];
-                $hour = $parts[4];
-                $minute = $parts[5];
-                $second = $parts[6];
-                $timezone = isset($parts[7]) ? $parts[7] : '';
+                    // Parse PDF date format: YYYYMMDDHHmmSS+TZ'TZ'
+                    // Example: 20250814093714+02'00'
+                    if (strlen($dateStr) >= 14) {
+                        $year = substr($dateStr, 0, 4);
+                        $month = substr($dateStr, 4, 2);
+                        $day = substr($dateStr, 6, 2);
+                        $hour = substr($dateStr, 8, 2);
+                        $minute = substr($dateStr, 10, 2);
+                        $second = substr($dateStr, 12, 2);
 
-                $formatted = "$year-$month-$day $hour:$minute:$second";
+                        // Validate that these are numeric
+                        if (is_numeric($year) && is_numeric($month) && is_numeric($day) &&
+                            is_numeric($hour) && is_numeric($minute) && is_numeric($second)) {
 
-                // Store timezone separately if present
-                if ($timezone) {
-                    dol_syslog("Signature timestamp with timezone: $formatted (TZ: $timezone)", LOG_DEBUG);
+                            $formatted = "$year-$month-$day $hour:$minute:$second";
+
+                            // Log timezone if present
+                            if (strlen($dateStr) > 14) {
+                                $timezone = substr($dateStr, 14);
+                                dol_syslog("Signature timestamp: $formatted (TZ: $timezone)", LOG_DEBUG);
+                            } else {
+                                dol_syslog("Signature timestamp: $formatted", LOG_DEBUG);
+                            }
+
+                            return $formatted;
+                        }
+                    }
                 }
-
-                return $formatted;
-            }
-        }
-
-        // Fallback patterns
-        $datePatterns = [
-            '/signingTime.*?(\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2})/',  // ISO format
-            '/(\d{4}-\d{2}-\d{2}\s+\d{2}:\d{2}:\d{2})/'  // Standard datetime
-        ];
-
-        foreach ($datePatterns as $pattern) {
-            if (preg_match($pattern, $pdfContent, $dateMatch)) {
-                return $dateMatch[1];
             }
         }
 
