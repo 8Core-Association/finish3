@@ -156,9 +156,11 @@ class Omat_Generator
                     p.prilog_rbr,
                     p.datum_kreiranja,
                     ef.filename,
-                    ef.rowid as ecm_file_id
+                    ef.rowid as ecm_file_id,
+                    CONCAT(u.firstname, ' ', u.lastname) as created_by
                 FROM " . MAIN_DB_PREFIX . "a_prilozi p
                 LEFT JOIN " . MAIN_DB_PREFIX . "ecm_files ef ON p.fk_ecm_file = ef.rowid
+                LEFT JOIN " . MAIN_DB_PREFIX . "user u ON ef.fk_user_c = u.rowid
                 WHERE p.ID_akta = " . (int)$akt_id . "
                 ORDER BY CAST(p.prilog_rbr AS UNSIGNED) ASC";
 
@@ -330,6 +332,15 @@ class Omat_Generator
                     $pdf->Cell(15, 5, '', 0, 0, 'L');
                     $datum_prilog = date('d.m.Y', strtotime($prilog->datum_kreiranja));
                     $pdf->Cell(0, 5, $this->encodeText('- Prilog ID: ' . $prilog->ID_priloga . ' | Datum dodavanja: ' . $datum_prilog), 0, 1, 'L');
+
+                    $pdf->Cell(20, 4, '', 0, 0, 'L');
+                    $pdf->SetFont(pdf_getPDFFont($this->langs), '', 8);
+                    $pdf->Cell(0, 4, $this->encodeText('Datoteka: "' . $prilog->filename . '"'), 0, 1, 'L');
+
+                    if (!empty($prilog->created_by)) {
+                        $pdf->Cell(20, 4, '', 0, 0, 'L');
+                        $pdf->Cell(0, 4, $this->encodeText('Kreirao: ' . $prilog->created_by), 0, 1, 'L');
+                    }
 
                     if (!empty($prilog->zaprimanja)) {
                         foreach ($prilog->zaprimanja as $zaprimanje) {
@@ -559,6 +570,12 @@ class Omat_Generator
                     foreach ($akt->prilozi as $prilog) {
                         $datum_prilog = date('d.m.Y', strtotime($prilog->datum_kreiranja));
                         $html .= '<div style="margin-left: 20px; font-size: 12px; margin-top: 8px;">- Prilog ID: ' . $prilog->ID_priloga . ' | Datum dodavanja: ' . $datum_prilog . '</div>';
+
+                        $html .= '<div style="margin-left: 30px; font-size: 11px; color: #333;">Datoteka: "' . htmlspecialchars($prilog->filename) . '"</div>';
+
+                        if (!empty($prilog->created_by)) {
+                            $html .= '<div style="margin-left: 30px; font-size: 11px; color: #333;">Kreirao: ' . htmlspecialchars($prilog->created_by) . '</div>';
+                        }
 
                         if (!empty($prilog->zaprimanja)) {
                             foreach ($prilog->zaprimanja as $zaprimanje) {

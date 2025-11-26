@@ -44,6 +44,8 @@
 **Format prikaza:**
 ```
    - Prilog ID: 101 | Datum dodavanja: 15.01.2025
+     Datoteka: "Prilog_1_CV.pdf"
+     Kreirao: Ivan Horvat
      Zaprimanje: Od "Ministarstvo obrazovanja" dana 14.01.2025
      Otprema: Dostavljeno "Ured gradonačelnika" dana 20.01.2025
      Otprema: Dostavljeno "Državni zavod" dana 22.01.2025
@@ -52,6 +54,8 @@
 **Dodano:**
 - ID_priloga (iz llx_a_prilozi)
 - Datum dodavanja (datum_kreiranja iz llx_a_prilozi)
+- **Naziv datoteke** (filename iz llx_ecm_files)
+- **Kreirao** (firstname + lastname iz llx_user preko fk_user_c)
 - Zaprimanje: Od "naziv" dana dd.mm.yyyy
 - Otprema: Dostavljeno "naziv" dana dd.mm.yyyy
 - Format datuma: `dd.mm.yyyy` (bez sata)
@@ -84,7 +88,8 @@
    - Dodano: `ORDER BY CAST(a.urb_broj AS UNSIGNED) ASC` - sortiranje po numeričkoj vrijednosti
 
 2. **`getPriloziForAkt()`**
-   - Dodano u SELECT: `p.ID_priloga`, `p.datum_kreiranja`
+   - Dodano u SELECT: `p.ID_priloga`, `p.datum_kreiranja`, `ef.filename`, `CONCAT(u.firstname, ' ', u.lastname) as created_by`
+   - Dodano LEFT JOIN: `llx_user u ON ef.fk_user_c = u.rowid`
    - Dodano: `ORDER BY CAST(p.prilog_rbr AS UNSIGNED) ASC`
 
 #### **Izmijenjene metode:**
@@ -94,6 +99,8 @@
    - Dodano prikazivanje datuma kreiranja za akt
    - Dodano prikazivanje otprema/zaprimanja za akt (odmah ispod datuma)
    - Dodano prikazivanje ID_priloga i datuma dodavanja za prilog
+   - **Dodano prikazivanje naziva datoteke za prilog**
+   - **Dodano prikazivanje kreatora za prilog (firstname + lastname)**
    - Format datuma: `date('d.m.Y', strtotime($datum))` - BEZ sata
    - Tekst za otpremu: `"Otprema: Dostavljeno \"[naziv]\" dana [dd.mm.yyyy]"`
    - Tekst za zaprimanje: `"Zaprimanje: Od \"[naziv]\" dana [dd.mm.yyyy]"`
@@ -138,9 +145,13 @@ POPIS DOKUMENATA
    Otprema: Dostavljeno "Ministarstvo obrazovanja" dana 20.01.2025
 
    - Prilog ID: 101 | Datum dodavanja: 15.01.2025
+     Datoteka: "Prilog_1_CV.pdf"
+     Kreirao: Ivan Horvat
      Zaprimanje: Od "Ministarstvo obrazovanja" dana 14.01.2025
 
    - Prilog ID: 102 | Datum dodavanja: 15.01.2025
+     Datoteka: "Prilog_2_Dokument.pdf"
+     Kreirao: Marko Marić
      Otprema: Dostavljeno "Ured gradonačelnika" dana 20.01.2025
      Otprema: Dostavljeno "Državni zavod" dana 22.01.2025
 
@@ -149,6 +160,8 @@ POPIS DOKUMENATA
    Datum kreiranja: 16.01.2025
 
    - Prilog ID: 103 | Datum dodavanja: 16.01.2025
+     Datoteka: "Prilog_3_Potvrda.pdf"
+     Kreirao: Ana Anić
 
 
 STRANICA 3:

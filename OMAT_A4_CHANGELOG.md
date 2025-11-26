@@ -33,9 +33,13 @@ Format zapisa:
    Otprema: Dostavljeno "Ministarstvo obrazovanja" dana 20.01.2025
 
    - Prilog ID: 101 | Datum dodavanja: 15.01.2025
+     Datoteka: "Prilog_1_CV.pdf"
+     Kreirao: Ivan Horvat
      Zaprimanje: Od "Ministarstvo obrazovanja" dana 14.01.2025
 
    - Prilog ID: 102 | Datum dodavanja: 15.01.2025
+     Datoteka: "Prilog_2_Dokument.pdf"
+     Kreirao: Marko Marić
      Otprema: Dostavljeno "Ured gradonačelnika" dana 20.01.2025
      Otprema: Dostavljeno "Državni zavod" dana 22.01.2025
 
@@ -67,7 +71,8 @@ Format zapisa:
 
 2. **`getPriloziForAkt($akt_id)`**
    - Dohvaca sve priloge za odredjeni akt
-   - Za svaki prilog dohvaca: ID_priloga, prilog_rbr, datum_kreiranja, filename
+   - Za svaki prilog dohvaca: ID_priloga, prilog_rbr, datum_kreiranja, filename, created_by (firstname + lastname)
+   - LEFT JOIN s llx_user preko fk_user_c
    - Za svaki prilog dohvaca: otpreme, zaprimanja
 
 3. **`getOtpremeForDocument($ecm_file_id, $tip_dokumenta)`**
