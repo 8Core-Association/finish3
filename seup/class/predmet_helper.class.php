@@ -661,7 +661,8 @@ class Predmet_helper
                         true,
                         $doc->signature_status ?? 'unknown',
                         $doc->signer_name ?? null,
-                        $doc->signature_date ?? null
+                        $doc->signature_date ?? null,
+                        $doc->signature_info ?? null
                     );
                     $documentTableHTML .= $signatureBadge;
                 } else {

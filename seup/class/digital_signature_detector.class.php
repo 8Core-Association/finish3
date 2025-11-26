@@ -146,74 +146,146 @@ class Digital_Signature_Detector
 
     /**
      * Extract signer information from PDF certificate data
+     * Improved to handle UTF-16 encoded names and binary certificate data
      */
     private static function extractSignerInfo($pdfContent)
     {
         $signerInfo = [];
 
-        // Look for common name (CN) in certificate - more specific pattern
-        if (preg_match('/CN=([^,\n\r\)]+)/', $pdfContent, $cnMatch)) {
-            $signerInfo['signer_name'] = trim($cnMatch[1]);
-            dol_syslog("Extracted signer name: " . $signerInfo['signer_name'], LOG_DEBUG);
+        // 1. Extract signer name from /Name field (UTF-16 encoded)
+        if (preg_match('/\/Name\s*\(([^\)]+)\)/', $pdfContent, $nameMatch)) {
+            $nameData = $nameMatch[1];
+
+            // Check for UTF-16 BOM and decode
+            if (strpos($nameData, "\xFE\xFF") === 0 || strpos($nameData, "\xFF\xFE") === 0) {
+                // Has BOM - use mb_convert_encoding
+                $decoded = mb_convert_encoding($nameData, 'UTF-8', 'UTF-16');
+                if ($decoded && strlen($decoded) > 0) {
+                    $signerInfo['signer_name'] = trim($decoded);
+                    dol_syslog("Extracted signer name (UTF-16): " . $signerInfo['signer_name'], LOG_DEBUG);
+                }
+            } else {
+                // Try UTF-16BE without BOM
+                $decoded = @iconv('UTF-16BE', 'UTF-8//IGNORE', $nameData);
+                if ($decoded && strlen($decoded) > 2) {
+                    $signerInfo['signer_name'] = trim($decoded);
+                    dol_syslog("Extracted signer name (UTF-16BE): " . $signerInfo['signer_name'], LOG_DEBUG);
+                }
+            }
         }
 
-        // Look for organization (O) in certificate - more specific pattern
-        if (preg_match('/O=([^,\n\r\)]+)/', $pdfContent, $orgMatch)) {
-            $signerInfo['organization'] = trim($orgMatch[1]);
+        // 2. Extract FINA certificate data from binary PKCS#7 signature
+        if (preg_match('/\/Contents\s*<([0-9a-fA-F]+)>/', $pdfContent, $contentsMatch)) {
+            $sigHex = $contentsMatch[1];
+            $sigBinary = @hex2bin($sigHex);
+
+            if ($sigBinary !== false) {
+                // Check for FINA issuer in binary
+                if (strpos($sigBinary, 'Financijska agencija') !== false) {
+                    $signerInfo['issuer'] = 'Financijska agencija';
+                    $signerInfo['issuer_unit'] = 'Fina RDC 2020';
+                    $signerInfo['ca_type'] = 'FINA';
+                    $signerInfo['is_qualified'] = true;
+                    dol_syslog("FINA certificate detected in binary data", LOG_DEBUG);
+                }
+
+                // Extract certificate serial number from Subject (OID 2.5.4.5)
+                $serialMarker = "\x06\x03\x55\x04\x05";
+                $serialPos = strpos($sigBinary, $serialMarker);
+                if ($serialPos !== false) {
+                    // Read ASN.1 length and value
+                    $length = ord($sigBinary[$serialPos + 5]);
+                    if ($length > 0 && $length < 100) {
+                        $serialData = substr($sigBinary, $serialPos + 6, $length);
+                        $serialValue = trim($serialData);
+                        if (strlen($serialValue) > 3 && ctype_print($serialValue)) {
+                            $signerInfo['serial_number'] = $serialValue;
+                            dol_syslog("Extracted certificate serial: " . $serialValue, LOG_DEBUG);
+                        }
+                    }
+                }
+
+                // Extract country code (OID 2.5.4.6)
+                $countryMarker = "\x06\x03\x55\x04\x06";
+                $countryPos = strpos($sigBinary, $countryMarker);
+                if ($countryPos !== false) {
+                    $length = ord($sigBinary[$countryPos + 5]);
+                    if ($length > 0 && $length < 10) {
+                        $countryData = substr($sigBinary, $countryPos + 6, $length);
+                        // Clean: keep only letters
+                        $countryValue = preg_replace('/[^A-Z]/i', '', $countryData);
+                        if (strlen($countryValue) == 2 && ctype_alpha($countryValue)) {
+                            $signerInfo['country'] = strtoupper($countryValue);
+                        }
+                    }
+                }
+
+                // Extract Common Name from certificate (OID 2.5.4.3)
+                // Note: This is usually the same as /Name but can be different
+                $cnMarker = "\x06\x03\x55\x04\x03";
+                $cnPos = strpos($sigBinary, $cnMarker);
+                if ($cnPos !== false && !isset($signerInfo['signer_name'])) {
+                    $length = ord($sigBinary[$cnPos + 5]);
+                    if ($length > 0 && $length < 200) {
+                        $cnData = substr($sigBinary, $cnPos + 6, $length);
+                        // Try UTF-8 first
+                        if (mb_check_encoding($cnData, 'UTF-8')) {
+                            $cnValue = trim($cnData);
+                            if (strlen($cnValue) > 2) {
+                                $signerInfo['signer_name'] = $cnValue;
+                                dol_syslog("Extracted CN from certificate: " . $cnValue, LOG_DEBUG);
+                            }
+                        }
+                    }
+                }
+            }
         }
 
-        // Look for issuer information - improved pattern
-        if (preg_match('/Issuer.*?CN=([^,\n\r\)]+)/', $pdfContent, $issuerMatch)) {
-            $signerInfo['issuer'] = trim($issuerMatch[1]);
-        } elseif (preg_match('/Fina\s+RDC/', $pdfContent)) {
-            $signerInfo['issuer'] = 'Fina RDC 2020';
-            dol_syslog("FINA issuer detected via pattern match", LOG_DEBUG);
-        }
-
-        // Look for email in certificate - improved pattern
-        if (preg_match('/emailAddress=([^,\s\n\r\)]+)/', $pdfContent, $emailMatch)) {
-            $signerInfo['email'] = trim($emailMatch[1]);
-        }
-
-        // Look for serial number - improved pattern
-        if (preg_match('/serialNumber=([^,\s\n\r\)]+)/', $pdfContent, $serialMatch)) {
-            $signerInfo['serial_number'] = trim($serialMatch[1]);
-        }
-
-        dol_syslog("Extracted signer info: " . json_encode($signerInfo), LOG_DEBUG);
+        dol_syslog("Final extracted signer info: " . json_encode($signerInfo, JSON_UNESCAPED_UNICODE), LOG_DEBUG);
         return empty($signerInfo) ? null : $signerInfo;
     }
 
     /**
      * Extract signature date from PDF
+     * Improved to handle timezone information
      */
     private static function extractSignatureDate($pdfContent)
     {
-        // Look for signature date in various formats
+        // Look for /M field with PDF date format (with timezone)
+        if (preg_match('/\/M\s*\(D:([^\)]+)\)/', $pdfContent, $dateMatch)) {
+            $dateStr = $dateMatch[1];
+
+            // Parse PDF date format: YYYYMMDDHHmmSS+TZ'TZ'
+            // Example: 20250814093714+02'00'
+            if (preg_match('/(\d{4})(\d{2})(\d{2})(\d{2})(\d{2})(\d{2})([+-]\d{2}\'\d{2}\')?/', $dateStr, $parts)) {
+                $year = $parts[1];
+                $month = $parts[2];
+                $day = $parts[3];
+                $hour = $parts[4];
+                $minute = $parts[5];
+                $second = $parts[6];
+                $timezone = isset($parts[7]) ? $parts[7] : '';
+
+                $formatted = "$year-$month-$day $hour:$minute:$second";
+
+                // Store timezone separately if present
+                if ($timezone) {
+                    dol_syslog("Signature timestamp with timezone: $formatted (TZ: $timezone)", LOG_DEBUG);
+                }
+
+                return $formatted;
+            }
+        }
+
+        // Fallback patterns
         $datePatterns = [
-            '/\/M\s*\(D:(\d{14})/',  // PDF date format (simplified)
             '/signingTime.*?(\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2})/',  // ISO format
             '/(\d{4}-\d{2}-\d{2}\s+\d{2}:\d{2}:\d{2})/'  // Standard datetime
         ];
 
         foreach ($datePatterns as $pattern) {
             if (preg_match($pattern, $pdfContent, $dateMatch)) {
-                $dateStr = $dateMatch[1];
-                
-                // Convert PDF date format to standard format
-                if (strlen($dateStr) === 14 && is_numeric($dateStr)) {
-                    // PDF date format: YYYYMMDDHHMMSS
-                    $year = substr($dateStr, 0, 4);
-                    $month = substr($dateStr, 4, 2);
-                    $day = substr($dateStr, 6, 2);
-                    $hour = substr($dateStr, 8, 2);
-                    $minute = substr($dateStr, 10, 2);
-                    $second = substr($dateStr, 12, 2);
-                    
-                    return "$year-$month-$day $hour:$minute:$second";
-                }
-                
-                return $dateStr;
+                return $dateMatch[1];
             }
         }
 
@@ -462,8 +534,9 @@ class Digital_Signature_Detector
 
     /**
      * Get signature badge HTML for document list
+     * Enhanced with multi-line tooltip and FINA detection
      */
-    public static function getSignatureBadge($hasSignature, $signatureStatus = 'unknown', $signerName = null, $signatureDate = null)
+    public static function getSignatureBadge($hasSignature, $signatureStatus = 'unknown', $signerName = null, $signatureDate = null, $signatureInfo = null)
     {
         if (!$hasSignature) {
             return '<span class="seup-signature-none"><i class="fas fa-minus-circle"></i> Nije potpisan</span>';
@@ -474,42 +547,91 @@ class Digital_Signature_Detector
         $title = 'Digitalno potpisan dokument';
         $text = 'Potpisan';
 
+        // Parse signature info if JSON
+        if (is_string($signatureInfo)) {
+            $signatureInfo = json_decode($signatureInfo, true);
+        }
+
+        // Check if it's FINA certificate
+        $isFINA = false;
+        if (is_array($signatureInfo)) {
+            if (isset($signatureInfo['ca_type']) && $signatureInfo['ca_type'] === 'FINA') {
+                $isFINA = true;
+            } elseif (isset($signatureInfo['issuer']) &&
+                     (strpos($signatureInfo['issuer'], 'Financijska agencija') !== false ||
+                      strpos($signatureInfo['issuer'], 'FINA') !== false)) {
+                $isFINA = true;
+            }
+        }
+
         switch ($signatureStatus) {
             case 'valid':
                 $badgeClass .= ' seup-signature-valid';
                 $icon = 'fas fa-certificate';
-                $title = 'Valjan digitalni potpis';
-                $text = 'Potpisan';
-                if ($signerName) {
-                    $title .= ' - ' . $signerName;
-                    $text = 'Potpisan - ' . $signerName;
+
+                // Build multi-line tooltip
+                $tooltipLines = [];
+                $tooltipLines[] = 'DIGITALNO POTPISAN DOKUMENT';
+                $tooltipLines[] = '';
+
+                if ($isFINA) {
+                    $tooltipLines[] = '🏛️ FINA Certifikat (Kvalificirani potpis)';
+                    $text = 'FINA Potpisan';
+                } else {
+                    $tooltipLines[] = '✓ Valjan digitalni potpis';
+                    $text = 'Potpisan';
                 }
+
+                if ($signerName) {
+                    $tooltipLines[] = 'Potpisnik: ' . $signerName;
+                }
+
                 if ($signatureDate) {
                     $formattedDate = date('d.m.Y H:i', strtotime($signatureDate));
-                    $title .= ' (' . $formattedDate . ')';
+                    $tooltipLines[] = 'Datum potpisa: ' . $formattedDate;
                 }
+
+                if (is_array($signatureInfo)) {
+                    if (isset($signatureInfo['issuer'])) {
+                        $tooltipLines[] = 'Izdavatelj: ' . $signatureInfo['issuer'];
+                    }
+                    if (isset($signatureInfo['issuer_unit'])) {
+                        $tooltipLines[] = 'Jedinica: ' . $signatureInfo['issuer_unit'];
+                    }
+                    if (isset($signatureInfo['serial_number'])) {
+                        $tooltipLines[] = 'Serijski broj: ' . $signatureInfo['serial_number'];
+                    }
+                    if (isset($signatureInfo['country'])) {
+                        $tooltipLines[] = 'Država: ' . $signatureInfo['country'];
+                    }
+                }
+
+                $title = implode('&#10;', array_map('htmlspecialchars', $tooltipLines));
                 break;
+
             case 'invalid':
                 $badgeClass .= ' seup-signature-invalid';
                 $icon = 'fas fa-exclamation-triangle';
-                $title = 'Nevaljan digitalni potpis';
+                $title = 'NEVALJAN DIGITALNI POTPIS&#10;&#10;Potpis nije moguće verificirati ili je narušen integritet dokumenta.';
                 $text = 'Nevaljan';
                 break;
+
             case 'expired':
                 $badgeClass .= ' seup-signature-expired';
                 $icon = 'fas fa-clock';
-                $title = 'Istekao digitalni potpis';
+                $title = 'ISTEKAO DIGITALNI POTPIS&#10;&#10;Certifikat potpisa je istekao.';
                 $text = 'Istekao';
                 break;
+
             default:
                 $badgeClass .= ' seup-signature-unknown';
                 $icon = 'fas fa-question-circle';
-                $title = 'Nepoznat status potpisa';
+                $title = 'NEPOZNAT STATUS POTPISA&#10;&#10;Potpis je detektiran ali nije moguće utvrditi valjanost.';
                 $text = 'Nepoznato';
                 break;
         }
 
-        return '<span class="' . $badgeClass . '" title="' . htmlspecialchars($title) . '">' .
+        return '<span class="' . $badgeClass . '" title="' . $title . '">' .
                '<i class="' . $icon . '"></i> ' . $text .
                '</span>';
     }
