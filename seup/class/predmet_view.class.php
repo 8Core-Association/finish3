@@ -344,7 +344,7 @@ class Predmet_View
         print '<div class="seup-preview-container">';
         print '<i class="fas fa-file-alt seup-preview-icon"></i>';
         print '<h4 class="seup-preview-title">Omot Spisa</h4>';
-        print '<p class="seup-preview-description">Generirajte ili pregledajte A3 omat spisa s osnovnim informacijama i popisom privitaka</p>';
+        print '<p class="seup-preview-description">Generirajte ili pregledajte A4 omot spisa s osnovnim informacijama i popisom privitaka</p>';
 
         print '<div class="seup-action-buttons">';
         print '<button type="button" class="seup-btn seup-btn-primary" id="generateOmotBtn">';
