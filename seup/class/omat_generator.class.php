@@ -506,7 +506,114 @@ class Omat_Generator
      */
     private function generatePreviewHTML($predmetData, $aktiData)
     {
-        $html = '<div class="seup-omat-preview">';
+        $html = '<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Omot Spisa - ' . htmlspecialchars($predmetData->klasa_format) . '</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: Arial, sans-serif;
+            background: #f5f5f5;
+        }
+
+        .seup-omat-preview {
+            max-width: 1200px;
+            margin: 0 auto;
+            background: white;
+        }
+
+        .seup-omat-page {
+            background: white;
+            padding: 40px;
+            margin-bottom: 20px;
+            min-height: 297mm;
+        }
+
+        .seup-omat-page-a4 {
+            width: 210mm;
+            height: 297mm;
+            margin: 0 auto 20px;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+        }
+
+        .seup-omat-section {
+            margin-bottom: 25px;
+        }
+
+        .seup-omat-section h4 {
+            font-size: 13px;
+            font-weight: bold;
+            margin-bottom: 8px;
+            color: #333;
+        }
+
+        .seup-omat-section p {
+            font-size: 14px;
+            color: #555;
+            line-height: 1.5;
+        }
+
+        .seup-omat-barcode {
+            margin-top: 40px;
+            text-align: center;
+        }
+
+        .seup-omat-title {
+            font-size: 14px;
+            font-weight: bold;
+            margin-bottom: 15px;
+            text-align: center;
+        }
+
+        @media print {
+            body {
+                background: white;
+                margin: 0;
+                padding: 0;
+            }
+
+            @page {
+                size: A4 portrait;
+                margin: 15mm;
+            }
+
+            .seup-omat-preview {
+                max-width: none;
+                margin: 0;
+            }
+
+            .seup-omat-page {
+                width: 210mm;
+                height: 297mm;
+                margin: 0;
+                padding: 20mm;
+                box-shadow: none;
+                page-break-after: always;
+                page-break-inside: avoid;
+            }
+
+            .seup-omat-page:last-child {
+                page-break-after: auto;
+            }
+
+            .seup-omat-page-a4 {
+                box-shadow: none;
+                margin: 0;
+            }
+        }
+    </style>
+</head>
+<body>';
+
+        $html .= '<div class="seup-omat-preview">';
 
         $html .= '<div class="seup-omat-page seup-omat-page-a4">';
         $html .= '<div class="seup-omat-section">';
@@ -537,13 +644,22 @@ class Omat_Generator
         $html .= '</div>';
 
         $html .= '<div class="seup-omat-page seup-omat-page-a4">';
-        $html .= '<h3 class="seup-omat-title" style="font-size: 14px; margin-bottom: 15px;">POPIS DOKUMENATA</h3>';
+        $html .= '<h3 class="seup-omat-title" style="font-size: 14px; margin-bottom: 15px;">POPIS DOKUMENATA - Stranica 2</h3>';
 
         if (empty($aktiData)) {
             $html .= '<p class="seup-omat-empty">Nema dokumenata</p>';
         } else {
             $rb = 1;
+            $itemsPerPage = ceil(count($aktiData) / 2);
+            $currentItem = 0;
+
             foreach ($aktiData as $akt) {
+                if ($currentItem == $itemsPerPage) {
+                    $html .= '</div>';
+                    $html .= '<div class="seup-omat-page seup-omat-page-a4">';
+                    $html .= '<h3 class="seup-omat-title" style="font-size: 14px; margin-bottom: 15px;">POPIS DOKUMENATA - Stranica 3 (nastavak)</h3>';
+                }
+
                 $akt_oznaka = $this->generateAktOznaka($predmetData, $akt->urb_broj);
                 $datum_akt = date('d.m.Y', strtotime($akt->datum_kreiranja));
 
@@ -596,16 +712,21 @@ class Omat_Generator
                 $html .= '<div style="border-bottom: 1px solid #ddd; margin: 15px 0;"></div>';
                 $html .= '</div>';
                 $rb++;
+                $currentItem++;
             }
         }
 
         $html .= '</div>';
 
         $html .= '<div class="seup-omat-page seup-omat-page-a4">';
-        $html .= '<p style="text-align:center; color: #999; padding-top: 100px;">Stranica 4 (prazna zadnja stranica)</p>';
+        $html .= '<div style="text-align:center; padding-top: 100px;">';
+        $html .= '<p style="color: #999; font-size: 14px;">Stranica 4</p>';
+        $html .= '<p style="color: #ccc; font-size: 12px; margin-top: 10px;">(Prazna zadnja stranica)</p>';
+        $html .= '</div>';
         $html .= '</div>';
 
         $html .= '</div>';
+        $html .= '</body></html>';
 
         return $html;
     }
