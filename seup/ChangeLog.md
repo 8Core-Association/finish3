@@ -89,136 +89,151 @@ Priprema za stabilno izdanje i distribuciju prema klijentima.
 
 Dokumentacija ažurirana: README, struktura, changelog.
 
-3.1.0 – Zaprimanja i Otprema Fundamentals
+---
 
-Dodan modul za zaprimanje pošte i dokumentacije.
+## 3.1.0 – Zaprimanja i Otprema Fundamentals
 
-Implementirana baza otpreme (llx_a_otprema tablica).
+**Datum:** Q1 2024
 
-Osnovni workflow za registraciju primljene i poslane pošte.
+### Nove značajke
+- ✉️ Dodan modul za zaprimanje pošte i dokumentacije
+- 📤 Implementirana baza otpreme (`llx_a_otprema` tablica)
+- 🔄 Osnovni workflow za registraciju primljene i poslane pošte
+- 🔗 Povezivanje zaprimanja/otprema s predmetima
 
-Povezivanje zaprimanja/otprema s predmetima.
+### Tehničke izmjene
+- SQL migracije za nove tablice
+- Backend struktura za evidentiranje ulazne/izlazne pošte
 
-SQL migracije za nove tablice.
+---
 
-3.2.0 – Dizajn Modernizacija
+## 3.2.0 – Dizajn Modernizacija
 
-Uveden moderan CSS dizajn sustav (seup-modern.css).
+**Datum:** Q1 2024
 
-Redizajnirane glavne stranice: predmeti, zaprimanja, otprema.
+### UI/UX
+- 🎨 Uveden moderan CSS dizajn sustav (`seup-modern.css`)
+- 📱 Redizajnirane glavne stranice: predmeti, zaprimanja, otprema
+- 📐 Poboljšan responsive layout i mobile experience
+- 🧭 Dodan novi header i navigacijski sustav
+- ✨ Vizualne optimizacije formi i tablica
 
-Poboljšan responsive layout i mobile experience.
+---
 
-Dodan novi header i navigacijski sustav.
+## 3.3.0 – Zaprimanja Extended
 
-Vizualne optimizacije formi i tablica.
+**Datum:** Q2 2024
 
-3.3.0 – Zaprimanja Extended
+### Proširenja
+- 🔍 Napredne funkcionalnosti za zaprimanja
+- 🔎 Pretraga, filtriranje i sortiranje zaprimljenih dokumenata
+- 🤖 Automatsko povezivanje zaprimanja s postojećim predmetima
+- 📊 Dodani statusni indikatori i workflow kontrole
+- 📥 Export funkcionalnosti za zaprimanja
 
-Napredne funkcionalnosti za zaprimanja.
+---
 
-Pretraga, filtriranje i sortiranje zaprimljenih dokumenata.
+## 3.4.0 – Otprema Advanced
 
-Automatsko povezivanje zaprimanja s postojećim predmetima.
+**Datum:** Q2 2024
 
-Dodani statusni indikatori i workflow kontrole.
+### Proširenja
+- 📮 Proširene mogućnosti otpreme dokumenata
+- 👥 Dodana integracija s adresarom (suradnici)
+- 📍 Praćenje statusa otpreme i potvrde dostave
+- 📦 Grupna otprema dokumenata
+- 🏷️ Generiranje poštanskih oznaka i potvrda
 
-Export funkcionalnosti za zaprimanja.
+---
 
-3.4.0 – Otprema Advanced
+## 3.5.0 – Code Cleanup Phase 1
 
-Proširene mogućnosti otpreme dokumenata.
+**Datum:** Q2 2024
 
-Dodana integracija s adresarom (suradnici).
+### Optimizacije
+- ⚡ Refaktorirani helper classes za bolje performance
+- 🧹 Uklonjen nekorišteni legacy kod
+- 🗄️ Optimizacija SQL upita
+- 📝 Standardizacija PHP dokumentacije i komentara
+- 🛡️ Poboljšana error handling logika
 
-Praćenje statusa otpreme i potvrde dostave.
+---
 
-Grupna otprema dokumenata.
+## 3.6.0 – UI/UX Improvements
 
-Generiranje poštanskih oznaka i potvrda.
+**Datum:** Q3 2024
 
-3.5.0 – Code Cleanup Phase 1
+### Poboljšanja korisničkog iskustva
+- 🎯 Redesign predmet.php stranice
+- 🪟 Novi modalni prozori za brže akcije
+- 💡 Dodani tooltipovi i inline help
+- 🔤 Poboljšan autocomplete za suradnike i oznake
+- ⚡ Optimizacija ajax poziva za brže učitavanje
 
-Refaktorirani helper classes za bolje performance.
+---
 
-Uklonjen nekorišteni legacy kod.
+## 3.7.0 – Security & Validation
 
-Optimizacija SQL upita.
+**Datum:** Q3 2024
 
-Standardizacija PHP dokumentacije i komentara.
+### Sigurnost
+- 🔐 Dodane dodatne sigurnosne provjere
+- ✅ Input sanitizacija i validacija na svim formama
+- 🛡️ CSRF zaštita na kritičnim akcijama
+- 💉 SQL injection prevencija - prepared statements
+- 🔑 Session management poboljšanja
 
-Poboljšana error handling logika.
+---
 
-3.6.0 – UI/UX Improvements
+## 4.0.0 – Major Architecture Update
 
-Redesign predmet.php stranice.
+**Datum:** Q4 2024
 
-Novi modalni prozori za brže akcije.
+### Arhitekturne promjene
+- 🏗️ Potpuna reorganizacija class strukture
+- 🔧 Uvedeni novi pattern: DataLoader, ActionHandler, ViewHelper
+- 📦 Refaktor `predmet.class.php` za modularnost
+- 🎯 Bolja separacija logike i prikaza
+- 🚀 Performance optimizacije na velikim bazama podataka
 
-Dodani tooltipovi i inline help.
+---
 
-Poboljšan autocomplete za suradnike i oznake.
+## 4.1.0 – OMAT Generator
 
-Optimizacija ajax poziva za brže učitavanje.
+**Datum:** Q4 2024
 
-3.7.0 – Security & Validation
+### Nova funkcionalnost
+- 🔢 Implementiran sustav za generiranje OMAT brojeva
+- ⚙️ Automatska alokacija brojeva prema pravilima
+- 🎛️ Konfigurabilan format brojeva ustanove
+- 🔗 Integracija s predmetima i aktima
+- ✔️ Provjera duplikata i validacija
 
-Dodane dodatne sigurnosne provjere.
+---
 
-Input sanitizacija i validacija na svim formama.
+## 4.2.0 – Document Preview System
 
-CSRF zaštita na kritičnim akcijama.
+**Datum:** Q1 2025
 
-SQL injection prevencija - prepared statements.
+### Nova funkcionalnost
+- 👁️ Dodan sustav za pregled dokumenata
+- 📄 PDF viewer integracija
+- 📝 DOCX pretvorba u PDF za preview
+- 🖼️ Thumbnails za brži pregled
+- 🖥️ Full-screen mode za dokumente
 
-Session management poboljšanja.
+---
 
-4.0.0 – Major Architecture Update
+## 4.2.5 – Omot & Stabilizacija (CURRENT)
 
-Potpuna reorganizacija class strukture.
+**Datum:** Q1 2025
 
-Uvedeni novi pattern: DataLoader, ActionHandler, ViewHelper.
+### Finalizacija
+- 📋 Implementiran sustav omota za predmete
+- 🔍 Stranica za predpregled omota prije ispisa
+- 🧹 Finalna čišćenja koda i optimizacije
+- 🔧 Popravke funkcionalnosti u zaprimanjima i otpremama
+- 🐛 Bugfixevi i stability improvements
+- 🚀 Priprema za production deployment
 
-Refaktor predmet.class.php za modularnost.
-
-Bolja separacija logike i prikaza.
-
-Performance optimizacije na velikim bazama podataka.
-
-4.1.0 – OMAT Generator
-
-Implementiran sustav za generiranje OMAT brojeva.
-
-Automatska alokacija brojeva prema pravilima.
-
-Konfigurabilan format brojeva ustanove.
-
-Integracija s predmetima i aktima.
-
-Provjera duplikata i validacija.
-
-4.2.0 – Document Preview System
-
-Dodan sustav za pregled dokumenata.
-
-PDF viewer integracija.
-
-DOCX pretvorba u PDF za preview.
-
-Thumbnails za brži pregled.
-
-Full-screen mode za dokumente.
-
-4.2.5 – Omot & Stabilizacija (CURRENT)
-
-Implementiran sustav omota za predmete.
-
-Stranica za predpregled omota prije ispisa.
-
-Finalna čišćenja koda i optimizacije.
-
-Popravke funkcionalnosti u zaprimanjima i otpremama.
-
-Bugfixevi i stability improvements.
-
-Priprema za production deployment.
+---
