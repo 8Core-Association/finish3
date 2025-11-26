@@ -41,7 +41,7 @@ class Changelog_Sistem
      *
      * @var string
      */
-    const RELEASE_DATE = '2025-10-15';
+    const RELEASE_DATE = '2025-11-26';
 
     /**
      * Dohvaća verziju formatiranu za footer.
