@@ -154,6 +154,7 @@ class Omat_Generator
         $sql = "SELECT
                     p.ID_priloga,
                     p.prilog_rbr,
+                    p.urb_broj,
                     p.datum_kreiranja,
                     ef.filename,
                     ef.rowid as ecm_file_id,
@@ -329,7 +330,7 @@ class Omat_Generator
                     $pdf->SetFont(pdf_getPDFFont($this->langs), '', 9);
                     $pdf->Cell(15, 5, '', 0, 0, 'L');
                     $datum_prilog = date('d.m.Y', strtotime($prilog->datum_kreiranja));
-                    $pdf->Cell(0, 5, $this->encodeText('- Prilog ID: ' . $prilog->ID_priloga . ' | Datum dodavanja: ' . $datum_prilog), 0, 1, 'L');
+                    $pdf->Cell(0, 5, $this->encodeText('- #' . $prilog->urb_broj . ' | Datum dodavanja: ' . $datum_prilog), 0, 1, 'L');
 
                     $pdf->Cell(20, 4, '', 0, 0, 'L');
                     $pdf->SetFont(pdf_getPDFFont($this->langs), '', 8);
@@ -569,7 +570,7 @@ class Omat_Generator
                 if (!empty($akt->prilozi)) {
                     foreach ($akt->prilozi as $prilog) {
                         $datum_prilog = date('d.m.Y', strtotime($prilog->datum_kreiranja));
-                        $html .= '<div style="margin-left: 20px; font-size: 12px; margin-top: 8px;">- Prilog ID: ' . $prilog->ID_priloga . ' | Datum dodavanja: ' . $datum_prilog . '</div>';
+                        $html .= '<div style="margin-left: 20px; font-size: 12px; margin-top: 8px;">- #' . $prilog->urb_broj . ' | Datum dodavanja: ' . $datum_prilog . '</div>';
 
                         $html .= '<div style="margin-left: 30px; font-size: 11px; color: #333;">Datoteka: "' . htmlspecialchars($prilog->filename) . '"</div>';
 
