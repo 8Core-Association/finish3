@@ -592,16 +592,28 @@ class Omat_Generator
 
             .seup-omat-page {
                 width: 210mm;
-                height: 297mm;
                 margin: 0;
                 padding: 20mm;
                 box-shadow: none;
-                page-break-after: always;
                 page-break-inside: avoid;
             }
 
-            .seup-omat-page:last-child {
-                page-break-after: auto;
+            .seup-omat-page:first-child {
+                page-break-after: always;
+            }
+
+            .seup-omat-content-page {
+                height: auto;
+                min-height: 0;
+            }
+
+            .seup-omat-back-page {
+                page-break-before: always;
+                height: 297mm;
+            }
+
+            .seup-omat-akt {
+                page-break-inside: avoid;
             }
 
             .seup-omat-page-a4 {
@@ -643,27 +655,18 @@ class Omat_Generator
 
         $html .= '</div>';
 
-        $html .= '<div class="seup-omat-page seup-omat-page-a4">';
-        $html .= '<h3 class="seup-omat-title" style="font-size: 14px; margin-bottom: 15px;">POPIS DOKUMENATA - Stranica 2</h3>';
+        $html .= '<div class="seup-omat-page seup-omat-page-a4 seup-omat-content-page">';
+        $html .= '<h3 class="seup-omat-title" style="font-size: 14px; margin-bottom: 15px;">POPIS DOKUMENATA</h3>';
 
         if (empty($aktiData)) {
             $html .= '<p class="seup-omat-empty">Nema dokumenata</p>';
         } else {
             $rb = 1;
-            $itemsPerPage = ceil(count($aktiData) / 2);
-            $currentItem = 0;
-
             foreach ($aktiData as $akt) {
-                if ($currentItem == $itemsPerPage) {
-                    $html .= '</div>';
-                    $html .= '<div class="seup-omat-page seup-omat-page-a4">';
-                    $html .= '<h3 class="seup-omat-title" style="font-size: 14px; margin-bottom: 15px;">POPIS DOKUMENATA - Stranica 3 (nastavak)</h3>';
-                }
-
                 $akt_oznaka = $this->generateAktOznaka($predmetData, $akt->urb_broj);
                 $datum_akt = date('d.m.Y', strtotime($akt->datum_kreiranja));
 
-                $html .= '<div class="seup-omat-akt" style="margin-bottom: 15px;">';
+                $html .= '<div class="seup-omat-akt" style="margin-bottom: 15px; page-break-inside: avoid;">';
                 $html .= '<div style="font-weight: bold; margin-bottom: 3px;">' . $rb . '. ' . htmlspecialchars($akt_oznaka) . '</div>';
                 $html .= '<div style="margin-left: 10px; font-size: 12px; margin-bottom: 2px;">Dokument: "' . htmlspecialchars($akt->filename) . '"</div>';
                 $html .= '<div style="margin-left: 10px; font-size: 12px; margin-bottom: 5px;">Datum kreiranja: ' . $datum_akt . '</div>';
@@ -712,16 +715,15 @@ class Omat_Generator
                 $html .= '<div style="border-bottom: 1px solid #ddd; margin: 15px 0;"></div>';
                 $html .= '</div>';
                 $rb++;
-                $currentItem++;
             }
         }
 
         $html .= '</div>';
 
-        $html .= '<div class="seup-omat-page seup-omat-page-a4">';
+        $html .= '<div class="seup-omat-page seup-omat-page-a4 seup-omat-back-page">';
         $html .= '<div style="text-align:center; padding-top: 100px;">';
-        $html .= '<p style="color: #999; font-size: 14px;">Stranica 4</p>';
-        $html .= '<p style="color: #ccc; font-size: 12px; margin-top: 10px;">(Prazna zadnja stranica)</p>';
+        $html .= '<p style="color: #999; font-size: 14px;">Zadnja stranica</p>';
+        $html .= '<p style="color: #ccc; font-size: 12px; margin-top: 10px;">(Prazna)</p>';
         $html .= '</div>';
         $html .= '</div>';
 
