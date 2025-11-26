@@ -27,15 +27,22 @@
 #### **Stranica 2 - Hijerarhijski popis dokumenata**
 Format zapisa:
 ```
-1. [AKT] - [code_ustanova]-[rbr_zaposlenika]-[godina]-[urb_broj]
-   - Prilog: rb 1, 2, 3...
-   - Otpreme lista (ako ima)
-   - Zaprimanja lista (ako ima)
+1. 0000-0-1-21-25-01
+   Dokument: "Odluka_o_prijemu.pdf"
+   Datum kreiranja: 15.01.2025
+   Otprema: Dostavljeno "Ministarstvo obrazovanja" dana 20.01.2025
 
-2. [AKT] - [code_ustanova]-[rbr_zaposlenika]-[godina]-[urb_broj]
-   - Prilog: rb 1, 2, 3...
-   - Otpreme lista (ako ima)
-   - Zaprimanja lista (ako ima)
+   - Prilog ID: 101 | Datum dodavanja: 15.01.2025
+     Zaprimanje: Od "Ministarstvo obrazovanja" dana 14.01.2025
+
+   - Prilog ID: 102 | Datum dodavanja: 15.01.2025
+     Otprema: Dostavljeno "Ured gradonačelnika" dana 20.01.2025
+     Otprema: Dostavljeno "Državni zavod" dana 22.01.2025
+
+2. 0000-0-1-21-25-02
+   Dokument: "Rješenje.pdf"
+   Datum kreiranja: 16.01.2025
+   Otprema: Dostavljeno "Ministarstvo" dana 18.01.2025
 ```
 
 #### **Stranica 3 - Nastavak liste**
@@ -60,6 +67,7 @@ Format zapisa:
 
 2. **`getPriloziForAkt($akt_id)`**
    - Dohvaca sve priloge za odredjeni akt
+   - Za svaki prilog dohvaca: ID_priloga, prilog_rbr, datum_kreiranja, filename
    - Za svaki prilog dohvaca: otpreme, zaprimanja
 
 3. **`getOtpremeForDocument($ecm_file_id, $tip_dokumenta)`**
@@ -69,7 +77,7 @@ Format zapisa:
    - Dohvaca sve zaprimanja za dokument (akt ili prilog)
 
 5. **`generateAktOznaka($predmetData, $urb_broj)`**
-   - Generira akt oznaku u formatu: `[code_ustanova]-[rbr_zaposlenika]-[godina]-[urb_broj]`
+   - Generira akt oznaku u formatu: `code_ustanova-rbr_zaposlenika-godina-urb_broj` (BEZ uglatih zagrada)
 
 ##### **Izmijenjene metode:**
 
@@ -84,7 +92,10 @@ Format zapisa:
 
 3. **`generatePage2and3()`**
    - Potpuno preradjena struktura
+   - Prikaz za AKT: oznaka, naziv dokumenta, datum kreiranja, otpreme/zaprimanja
+   - Prikaz za PRILOG: ID priloga, datum dodavanja, otpreme/zaprimanja
    - Hijerarhijski prikaz: Akt → Prilozi → Otpreme/Zaprimanja
+   - Datumi bez sata (samo dd.mm.yyyy)
    - Automatski nastavak na stranicu 3 ako treba
 
 4. **`generatePage4()`**
@@ -139,15 +150,17 @@ Format zapisa:
 
 ### 6. Akt Oznaka Format
 
-**Format:** `[code_ustanova]-[rbr_zaposlenika]-[godina]-[urb_broj]`
+**Format:** `code_ustanova-rbr_zaposlenika-godina-urb_broj`
 
-**Primjer:** `0000-1-1-05-01-25-01`
+**Primjer:** `0000-0-1-21-25-01`
 
 **Komponente:**
-- `code_ustanova` - Oznaka ustanove (npr. "0000-1-1")
-- `rbr_zaposlenika` - Redni broj zaposlenika/korisnika
+- `code_ustanova` - Oznaka ustanove (npr. "0000-0-1")
+- `rbr_zaposlenika` - Redni broj zaposlenika/korisnika (npr. "21")
 - `godina` - Godina predmeta (dvoznamenkasta, npr. "25")
-- `urb_broj` - Uruzbeni broj akta (dvoznamenkasti, npr. "01")
+- `urb_broj` - Urudžbeni broj akta (dvoznamenkasti, npr. "01")
+
+**NAPOMENA:** Bez uglatih zagrada!
 
 ---
 

@@ -129,7 +129,7 @@ class Omat_Generator
                 FROM " . MAIN_DB_PREFIX . "a_akti a
                 LEFT JOIN " . MAIN_DB_PREFIX . "ecm_files ef ON a.fk_ecm_file = ef.rowid
                 WHERE a.ID_predmeta = " . (int)$predmet_id . "
-                ORDER BY a.urb_broj ASC";
+                ORDER BY CAST(a.urb_broj AS UNSIGNED) ASC";
 
         $resql = $this->db->query($sql);
         if ($resql) {
@@ -152,7 +152,9 @@ class Omat_Generator
         $prilozi = [];
 
         $sql = "SELECT
+                    p.ID_priloga,
                     p.prilog_rbr,
+                    p.datum_kreiranja,
                     ef.filename,
                     ef.rowid as ecm_file_id
                 FROM " . MAIN_DB_PREFIX . "a_prilozi p
@@ -292,8 +294,33 @@ class Omat_Generator
             $pdf->Cell(10, 6, $rb . '.', 0, 0, 'L');
             $pdf->Cell(0, 6, $akt_oznaka, 0, 1, 'L');
 
+            $pdf->SetFont(pdf_getPDFFont($this->langs), '', 9);
+            $pdf->Cell(10, 5, '', 0, 0, 'L');
+            $pdf->Cell(0, 5, $this->encodeText('Dokument: \"' . $akt->filename . '\"'), 0, 1, 'L');
+
+            $pdf->Cell(10, 5, '', 0, 0, 'L');
+            $datum_akt = date('d.m.Y', strtotime($akt->datum_kreiranja));
+            $pdf->Cell(0, 5, $this->encodeText('Datum kreiranja: ' . $datum_akt), 0, 1, 'L');
+
+            if (!empty($akt->otpreme)) {
+                foreach ($akt->otpreme as $otprema) {
+                    $pdf->SetFont(pdf_getPDFFont($this->langs), 'I', 8);
+                    $pdf->Cell(10, 4, '', 0, 0, 'L');
+                    $datum_otp = date('d.m.Y', strtotime($otprema->datum_otpreme));
+                    $pdf->Cell(0, 4, $this->encodeText('Otprema: Dostavljeno \"' . $otprema->primatelj_naziv . '\" dana ' . $datum_otp), 0, 1, 'L');
+                }
+            }
+
+            if (!empty($akt->zaprimanja)) {
+                foreach ($akt->zaprimanja as $zaprimanje) {
+                    $pdf->SetFont(pdf_getPDFFont($this->langs), 'I', 8);
+                    $pdf->Cell(10, 4, '', 0, 0, 'L');
+                    $datum_zap = date('d.m.Y', strtotime($zaprimanje->datum_zaprimanja));
+                    $pdf->Cell(0, 4, $this->encodeText('Zaprimanje: Od \"' . $zaprimanje->posiljatelj_naziv . '\" dana ' . $datum_zap), 0, 1, 'L');
+                }
+            }
+
             if (!empty($akt->prilozi)) {
-                $prilog_rb = 1;
                 foreach ($akt->prilozi as $prilog) {
                     if ($pdf->GetY() > 270) {
                         $pdf->AddPage('P', 'A4');
@@ -301,41 +328,26 @@ class Omat_Generator
 
                     $pdf->SetFont(pdf_getPDFFont($this->langs), '', 9);
                     $pdf->Cell(15, 5, '', 0, 0, 'L');
-                    $pdf->Cell(0, 5, $this->encodeText('- Prilog: rb ' . $prilog_rb), 0, 1, 'L');
-
-                    if (!empty($prilog->otpreme)) {
-                        foreach ($prilog->otpreme as $otprema) {
-                            $pdf->SetFont(pdf_getPDFFont($this->langs), 'I', 8);
-                            $pdf->Cell(25, 4, '', 0, 0, 'L');
-                            $pdf->Cell(0, 4, $this->encodeText('* Otprema: ' . $otprema->primatelj_naziv), 0, 1, 'L');
-                        }
-                    }
+                    $datum_prilog = date('d.m.Y', strtotime($prilog->datum_kreiranja));
+                    $pdf->Cell(0, 5, $this->encodeText('- Prilog ID: ' . $prilog->ID_priloga . ' | Datum dodavanja: ' . $datum_prilog), 0, 1, 'L');
 
                     if (!empty($prilog->zaprimanja)) {
                         foreach ($prilog->zaprimanja as $zaprimanje) {
                             $pdf->SetFont(pdf_getPDFFont($this->langs), 'I', 8);
-                            $pdf->Cell(25, 4, '', 0, 0, 'L');
-                            $pdf->Cell(0, 4, $this->encodeText('* Zaprimanje: ' . $zaprimanje->posiljatelj_naziv), 0, 1, 'L');
+                            $pdf->Cell(20, 4, '', 0, 0, 'L');
+                            $datum_zap = date('d.m.Y', strtotime($zaprimanje->datum_zaprimanja));
+                            $pdf->Cell(0, 4, $this->encodeText('Zaprimanje: Od \"' . $zaprimanje->posiljatelj_naziv . '\" dana ' . $datum_zap), 0, 1, 'L');
                         }
                     }
 
-                    $prilog_rb++;
-                }
-            }
-
-            if (!empty($akt->otpreme)) {
-                foreach ($akt->otpreme as $otprema) {
-                    $pdf->SetFont(pdf_getPDFFont($this->langs), 'I', 9);
-                    $pdf->Cell(15, 4, '', 0, 0, 'L');
-                    $pdf->Cell(0, 4, $this->encodeText('- Otprema: ' . $otprema->primatelj_naziv), 0, 1, 'L');
-                }
-            }
-
-            if (!empty($akt->zaprimanja)) {
-                foreach ($akt->zaprimanja as $zaprimanje) {
-                    $pdf->SetFont(pdf_getPDFFont($this->langs), 'I', 9);
-                    $pdf->Cell(15, 4, '', 0, 0, 'L');
-                    $pdf->Cell(0, 4, $this->encodeText('- Zaprimanje: ' . $zaprimanje->posiljatelj_naziv), 0, 1, 'L');
+                    if (!empty($prilog->otpreme)) {
+                        foreach ($prilog->otpreme as $otprema) {
+                            $pdf->SetFont(pdf_getPDFFont($this->langs), 'I', 8);
+                            $pdf->Cell(20, 4, '', 0, 0, 'L');
+                            $datum_otp = date('d.m.Y', strtotime($otprema->datum_otpreme));
+                            $pdf->Cell(0, 4, $this->encodeText('Otprema: Dostavljeno \"' . $otprema->primatelj_naziv . '\" dana ' . $datum_otp), 0, 1, 'L');
+                        }
+                    }
                 }
             }
 
@@ -349,12 +361,12 @@ class Omat_Generator
     }
 
     /**
-     * Generate akt oznaka: [code_ustanova]-[rbr_zaposlenika]-[godina]-[urb_broj]
+     * Generate akt oznaka: code_ustanova-rbr_zaposlenika-godina-urb_broj
      */
     private function generateAktOznaka($predmetData, $urb_broj)
     {
         return sprintf(
-            '[%s]-[%s]-[%s]-[%s]',
+            '%s-%s-%s-%s',
             $predmetData->code_ustanova,
             $predmetData->korisnik_rbr,
             $predmetData->godina,
@@ -522,40 +534,45 @@ class Omat_Generator
             $rb = 1;
             foreach ($aktiData as $akt) {
                 $akt_oznaka = $this->generateAktOznaka($predmetData, $akt->urb_broj);
+                $datum_akt = date('d.m.Y', strtotime($akt->datum_kreiranja));
 
                 $html .= '<div class="seup-omat-akt" style="margin-bottom: 15px;">';
-                $html .= '<div style="font-weight: bold; margin-bottom: 5px;">' . $rb . '. ' . htmlspecialchars($akt_oznaka) . '</div>';
-
-                if (!empty($akt->prilozi)) {
-                    $prilog_rb = 1;
-                    foreach ($akt->prilozi as $prilog) {
-                        $html .= '<div style="margin-left: 20px; font-size: 13px;">- Prilog: rb ' . $prilog_rb . '</div>';
-
-                        if (!empty($prilog->otpreme)) {
-                            foreach ($prilog->otpreme as $otprema) {
-                                $html .= '<div style="margin-left: 40px; font-size: 12px; font-style: italic; color: #555;">* Otprema: ' . htmlspecialchars($otprema->primatelj_naziv) . '</div>';
-                            }
-                        }
-
-                        if (!empty($prilog->zaprimanja)) {
-                            foreach ($prilog->zaprimanja as $zaprimanje) {
-                                $html .= '<div style="margin-left: 40px; font-size: 12px; font-style: italic; color: #555;">* Zaprimanje: ' . htmlspecialchars($zaprimanje->posiljatelj_naziv) . '</div>';
-                            }
-                        }
-
-                        $prilog_rb++;
-                    }
-                }
+                $html .= '<div style="font-weight: bold; margin-bottom: 3px;">' . $rb . '. ' . htmlspecialchars($akt_oznaka) . '</div>';
+                $html .= '<div style="margin-left: 10px; font-size: 12px; margin-bottom: 2px;">Dokument: "' . htmlspecialchars($akt->filename) . '"</div>';
+                $html .= '<div style="margin-left: 10px; font-size: 12px; margin-bottom: 5px;">Datum kreiranja: ' . $datum_akt . '</div>';
 
                 if (!empty($akt->otpreme)) {
                     foreach ($akt->otpreme as $otprema) {
-                        $html .= '<div style="margin-left: 20px; font-size: 13px; font-style: italic;">- Otprema: ' . htmlspecialchars($otprema->primatelj_naziv) . '</div>';
+                        $datum_otp = date('d.m.Y', strtotime($otprema->datum_otpreme));
+                        $html .= '<div style="margin-left: 10px; font-size: 11px; font-style: italic; color: #555;">Otprema: Dostavljeno "' . htmlspecialchars($otprema->primatelj_naziv) . '" dana ' . $datum_otp . '</div>';
                     }
                 }
 
                 if (!empty($akt->zaprimanja)) {
                     foreach ($akt->zaprimanja as $zaprimanje) {
-                        $html .= '<div style="margin-left: 20px; font-size: 13px; font-style: italic;">- Zaprimanje: ' . htmlspecialchars($zaprimanje->posiljatelj_naziv) . '</div>';
+                        $datum_zap = date('d.m.Y', strtotime($zaprimanje->datum_zaprimanja));
+                        $html .= '<div style="margin-left: 10px; font-size: 11px; font-style: italic; color: #555;">Zaprimanje: Od "' . htmlspecialchars($zaprimanje->posiljatelj_naziv) . '" dana ' . $datum_zap . '</div>';
+                    }
+                }
+
+                if (!empty($akt->prilozi)) {
+                    foreach ($akt->prilozi as $prilog) {
+                        $datum_prilog = date('d.m.Y', strtotime($prilog->datum_kreiranja));
+                        $html .= '<div style="margin-left: 20px; font-size: 12px; margin-top: 8px;">- Prilog ID: ' . $prilog->ID_priloga . ' | Datum dodavanja: ' . $datum_prilog . '</div>';
+
+                        if (!empty($prilog->zaprimanja)) {
+                            foreach ($prilog->zaprimanja as $zaprimanje) {
+                                $datum_zap = date('d.m.Y', strtotime($zaprimanje->datum_zaprimanja));
+                                $html .= '<div style="margin-left: 30px; font-size: 11px; font-style: italic; color: #555;">Zaprimanje: Od "' . htmlspecialchars($zaprimanje->posiljatelj_naziv) . '" dana ' . $datum_zap . '</div>';
+                            }
+                        }
+
+                        if (!empty($prilog->otpreme)) {
+                            foreach ($prilog->otpreme as $otprema) {
+                                $datum_otp = date('d.m.Y', strtotime($otprema->datum_otpreme));
+                                $html .= '<div style="margin-left: 30px; font-size: 11px; font-style: italic; color: #555;">Otprema: Dostavljeno "' . htmlspecialchars($otprema->primatelj_naziv) . '" dana ' . $datum_otp . '</div>';
+                            }
+                        }
                     }
                 }
 
