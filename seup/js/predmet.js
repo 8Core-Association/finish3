@@ -13,10 +13,6 @@ document.addEventListener("DOMContentLoaded", function() {
 
             const pane = document.getElementById(target);
             if (pane) pane.classList.add('active');
-
-            if (target === 'prepregled' && typeof openOmotPreview === 'function') {
-                openOmotPreview();
-            }
         });
     });
 
