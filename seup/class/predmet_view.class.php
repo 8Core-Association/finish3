@@ -458,13 +458,21 @@ class Predmet_View
         print '<div class="seup-print-step">';
         print '<div class="seup-step-number">1</div>';
         print '<div class="seup-step-content">';
-        print '<h5>Postavke printera</h5>';
-        print '<p>Postavite printer na <strong>A3 format papira</strong> (297 x 420 mm)</p>';
+        print '<h5>Format dokumenta</h5>';
+        print '<p>Dokument je formatiran kao <strong>4 A4 stranice u portretnom formatu</strong></p>';
         print '</div>';
         print '</div>';
 
         print '<div class="seup-print-step">';
         print '<div class="seup-step-number">2</div>';
+        print '<div class="seup-step-content">';
+        print '<h5>Postavke printera</h5>';
+        print '<p>Za ispis postavite printer na <strong>A3 format papira</strong> (297 x 420 mm)</p>';
+        print '</div>';
+        print '</div>';
+
+        print '<div class="seup-print-step">';
+        print '<div class="seup-step-number">3</div>';
         print '<div class="seup-step-content">';
         print '<h5>Orijentacija</h5>';
         print '<p>Odaberite <strong>Portrait</strong> (uspravnu) orijentaciju</p>';
@@ -472,18 +480,10 @@ class Predmet_View
         print '</div>';
 
         print '<div class="seup-print-step">';
-        print '<div class="seup-step-number">3</div>';
-        print '<div class="seup-step-content">';
-        print '<h5>Margine</h5>';
-        print '<p>Postavite margine na <strong>minimum</strong> ili koristite "Fit to page"</p>';
-        print '</div>';
-        print '</div>';
-
-        print '<div class="seup-print-step">';
         print '<div class="seup-step-number">4</div>';
         print '<div class="seup-step-content">';
-        print '<h5>Preklapanje</h5>';
-        print '<p>Nakon ispisa, <strong>preklopite papir na pola</strong> da formirate omot</p>';
+        print '<h5>Ispis</h5>';
+        print '<p>Sve 4 A4 stranice bit će ispisane na jedan A3 papir</p>';
         print '</div>';
         print '</div>';
         print '</div>';
@@ -492,8 +492,8 @@ class Predmet_View
         print '<div class="seup-note-icon"><i class="fas fa-lightbulb"></i></div>';
         print '<div class="seup-note-content">';
         print '<h5>Napomena</h5>';
-        print '<p>Omot spisa je dizajniran za A3 papir koji se preklapa na pola. ';
-        print 'Stranica 1 je naslovnica, stranice 2-3 su unutarnje (popis privitaka), a stranica 4 je zadnja.</p>';
+        print '<p>Omot spisa se sastoji od 4 A4 stranice u portretnom formatu. ';
+        print 'Za ispis koristite A3 papir u postavkama printera kako bi sve stranice bile ispisane pravilno.</p>';
         print '</div>';
         print '</div>';
 
