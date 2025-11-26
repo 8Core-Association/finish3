@@ -153,78 +153,128 @@ class Digital_Signature_Detector
         $signerInfo = [];
 
         // 1. Extract signer name from /Name field (UTF-16 encoded)
-        if (preg_match('/\/Name\s*\(([^\)]+)\)/', $pdfContent, $nameMatch)) {
-            $nameData = $nameMatch[1];
+        // Use binary-safe search instead of regex
+        $namePos = strpos($pdfContent, '/Name');
+        if ($namePos !== false) {
+            // Find opening parenthesis
+            $openParen = strpos($pdfContent, '(', $namePos);
+            if ($openParen !== false) {
+                // Find closing parenthesis
+                $closeParen = strpos($pdfContent, ')', $openParen);
+                if ($closeParen !== false) {
+                    // Extract the data between parentheses
+                    $nameData = substr($pdfContent, $openParen + 1, $closeParen - $openParen - 1);
 
-            // Check for UTF-16 BOM and decode
-            if (strpos($nameData, "\xFE\xFF") === 0 || strpos($nameData, "\xFF\xFE") === 0) {
-                // Has BOM - use mb_convert_encoding
-                $decoded = mb_convert_encoding($nameData, 'UTF-8', 'UTF-16');
-                if ($decoded && strlen($decoded) > 0) {
-                    $signerInfo['signer_name'] = trim($decoded);
-                    dol_syslog("Extracted signer name (UTF-16): " . $signerInfo['signer_name'], LOG_DEBUG);
-                }
-            } else {
-                // Try UTF-16BE without BOM
-                $decoded = @iconv('UTF-16BE', 'UTF-8//IGNORE', $nameData);
-                if ($decoded && strlen($decoded) > 2) {
-                    $signerInfo['signer_name'] = trim($decoded);
-                    dol_syslog("Extracted signer name (UTF-16BE): " . $signerInfo['signer_name'], LOG_DEBUG);
+                    // Check for UTF-16 BOM (FE FF or FF FE)
+                    if (strlen($nameData) > 2) {
+                        $firstByte = ord($nameData[0]);
+                        $secondByte = ord($nameData[1]);
+
+                        if ($firstByte === 0xFE && $secondByte === 0xFF) {
+                            // UTF-16BE with BOM
+                            $decoded = mb_convert_encoding($nameData, 'UTF-8', 'UTF-16BE');
+                            $signerInfo['signer_name'] = trim($decoded);
+                            dol_syslog("Extracted signer name (UTF-16BE BOM): " . $signerInfo['signer_name'], LOG_DEBUG);
+                        } elseif ($firstByte === 0xFF && $secondByte === 0xFE) {
+                            // UTF-16LE with BOM
+                            $decoded = mb_convert_encoding($nameData, 'UTF-8', 'UTF-16LE');
+                            $signerInfo['signer_name'] = trim($decoded);
+                            dol_syslog("Extracted signer name (UTF-16LE BOM): " . $signerInfo['signer_name'], LOG_DEBUG);
+                        } else {
+                            // Try UTF-16BE without BOM (common in PDFs)
+                            $decoded = @iconv('UTF-16BE', 'UTF-8//IGNORE', $nameData);
+                            if ($decoded && strlen($decoded) > 1 && preg_match('/[a-zA-Z]/', $decoded)) {
+                                $signerInfo['signer_name'] = trim($decoded);
+                                dol_syslog("Extracted signer name (UTF-16BE no BOM): " . $signerInfo['signer_name'], LOG_DEBUG);
+                            }
+                        }
+                    }
                 }
             }
         }
 
         // 2. Extract FINA certificate data from binary PKCS#7 signature
-        if (preg_match('/\/Contents\s*<([0-9a-fA-F]+)>/', $pdfContent, $contentsMatch)) {
-            $sigHex = $contentsMatch[1];
-            $sigBinary = @hex2bin($sigHex);
+        // Use binary-safe search for /Contents
+        // Look for digital signature /Contents (should be a long hex string > 1000 chars)
+        $contentsPos = 0;
+        $sigBinary = false;
 
-            if ($sigBinary !== false) {
-                // Check for FINA issuer in binary
-                if (strpos($sigBinary, 'Financijska agencija') !== false) {
-                    $signerInfo['issuer'] = 'Financijska agencija';
-                    $signerInfo['issuer_unit'] = 'Fina RDC 2020';
-                    $signerInfo['ca_type'] = 'FINA';
-                    $signerInfo['is_qualified'] = true;
-                    dol_syslog("FINA certificate detected in binary data", LOG_DEBUG);
-                }
+        while (($contentsPos = strpos($pdfContent, '/Contents', $contentsPos)) !== false) {
+            // Find opening < bracket
+            $openBracket = strpos($pdfContent, '<', $contentsPos);
+            if ($openBracket !== false) {
+                // Find closing > bracket
+                $closeBracket = strpos($pdfContent, '>', $openBracket);
+                if ($closeBracket !== false) {
+                    // Extract hex signature
+                    $sigHex = substr($pdfContent, $openBracket + 1, $closeBracket - $openBracket - 1);
 
-                // Extract certificate serial number from Subject (OID 2.5.4.5)
-                $serialMarker = "\x06\x03\x55\x04\x05";
-                $serialPos = strpos($sigBinary, $serialMarker);
-                if ($serialPos !== false) {
-                    // Read ASN.1 length and value
-                    $length = ord($sigBinary[$serialPos + 5]);
-                    if ($length > 0 && $length < 100) {
-                        $serialData = substr($sigBinary, $serialPos + 6, $length);
-                        $serialValue = trim($serialData);
-                        if (strlen($serialValue) > 3 && ctype_print($serialValue)) {
-                            $signerInfo['serial_number'] = $serialValue;
-                            dol_syslog("Extracted certificate serial: " . $serialValue, LOG_DEBUG);
+                    // Check if this is a real signature (should be long hex string)
+                    if (strlen($sigHex) > 1000 && ctype_xdigit(substr($sigHex, 0, 100))) {
+                        // Convert hex to binary
+                        $sigBinary = @hex2bin($sigHex);
+
+                        if ($sigBinary !== false && strlen($sigBinary) > 500) {
+                            dol_syslog("Certificate binary size: " . strlen($sigBinary) . " bytes", LOG_DEBUG);
+                            break; // Found the signature
                         }
                     }
                 }
+            }
+            $contentsPos++; // Continue searching
+        }
 
-                // Extract country code (OID 2.5.4.6)
-                $countryMarker = "\x06\x03\x55\x04\x06";
-                $countryPos = strpos($sigBinary, $countryMarker);
-                if ($countryPos !== false) {
-                    $length = ord($sigBinary[$countryPos + 5]);
-                    if ($length > 0 && $length < 10) {
-                        $countryData = substr($sigBinary, $countryPos + 6, $length);
-                        // Clean: keep only letters
-                        $countryValue = preg_replace('/[^A-Z]/i', '', $countryData);
-                        if (strlen($countryValue) == 2 && ctype_alpha($countryValue)) {
-                            $signerInfo['country'] = strtoupper($countryValue);
-                        }
+        if ($sigBinary !== false) {
+            // Check for FINA issuer in binary
+            if (strpos($sigBinary, 'Financijska agencija') !== false) {
+                $signerInfo['issuer'] = 'Financijska agencija';
+                $signerInfo['ca_type'] = 'FINA';
+                $signerInfo['is_qualified'] = true;
+                dol_syslog("FINA issuer detected: Financijska agencija", LOG_DEBUG);
+            }
+
+            // Check for FINA unit
+            if (strpos($sigBinary, 'Fina RDC 2020') !== false) {
+                $signerInfo['issuer_unit'] = 'Fina RDC 2020';
+                dol_syslog("FINA unit detected: Fina RDC 2020", LOG_DEBUG);
+            }
+
+            // Extract certificate serial number from Subject (OID 2.5.4.5)
+            $serialMarker = "\x06\x03\x55\x04\x05";
+            $serialPos = strpos($sigBinary, $serialMarker);
+            if ($serialPos !== false) {
+                // Read ASN.1 length and value
+                $length = ord($sigBinary[$serialPos + 5]);
+                if ($length > 0 && $length < 100) {
+                    $serialData = substr($sigBinary, $serialPos + 6, $length);
+                    $serialValue = trim($serialData);
+                    if (strlen($serialValue) > 3 && ctype_print($serialValue)) {
+                        $signerInfo['serial_number'] = $serialValue;
+                        dol_syslog("Extracted certificate serial: " . $serialValue, LOG_DEBUG);
                     }
                 }
+            }
 
-                // Extract Common Name from certificate (OID 2.5.4.3)
-                // Note: This is usually the same as /Name but can be different
+            // Extract country code (OID 2.5.4.6)
+            $countryMarker = "\x06\x03\x55\x04\x06";
+            $countryPos = strpos($sigBinary, $countryMarker);
+            if ($countryPos !== false) {
+                $length = ord($sigBinary[$countryPos + 5]);
+                if ($length > 0 && $length < 10) {
+                    $countryData = substr($sigBinary, $countryPos + 6, $length);
+                    // Clean: keep only letters
+                    $countryValue = preg_replace('/[^A-Z]/i', '', $countryData);
+                    if (strlen($countryValue) == 2 && ctype_alpha($countryValue)) {
+                        $signerInfo['country'] = strtoupper($countryValue);
+                    }
+                }
+            }
+
+            // Extract Common Name from certificate (OID 2.5.4.3) as fallback
+            if (!isset($signerInfo['signer_name'])) {
                 $cnMarker = "\x06\x03\x55\x04\x03";
                 $cnPos = strpos($sigBinary, $cnMarker);
-                if ($cnPos !== false && !isset($signerInfo['signer_name'])) {
+                if ($cnPos !== false) {
                     $length = ord($sigBinary[$cnPos + 5]);
                     if ($length > 0 && $length < 200) {
                         $cnData = substr($sigBinary, $cnPos + 6, $length);
