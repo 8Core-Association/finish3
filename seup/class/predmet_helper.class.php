@@ -604,17 +604,8 @@ class Predmet_helper
                 $documentTableHTML .= '<i class="' . self::getFileIcon($doc->filename) . '"></i>';
                 $documentTableHTML .= '</div>';
 
-                // Make PDF filename clickable for preview
-                $isPDF = strtolower(pathinfo($doc->filename, PATHINFO_EXTENSION)) === 'pdf';
-                $download_url = DOL_URL_ROOT . '/document.php?modulepart=ecm&file=' . urlencode($relative_path . $doc->filename);
-
-                if ($isPDF) {
-                    $documentTableHTML .= '<span class="seup-pdf-preview-trigger" data-pdf-url="' . htmlspecialchars($download_url) . '" data-filename="' . htmlspecialchars($doc->filename) . '" style="cursor: pointer; color: var(--primary-600);" title="Klikni za predpregled">';
-                    $documentTableHTML .= htmlspecialchars($doc->filename);
-                    $documentTableHTML .= '</span>';
-                } else {
-                    $documentTableHTML .= htmlspecialchars($doc->filename);
-                }
+                // Display filename without any click actions
+                $documentTableHTML .= htmlspecialchars($doc->filename);
 
                 $documentTableHTML .= '</div>';
                 $documentTableHTML .= '</td>';
