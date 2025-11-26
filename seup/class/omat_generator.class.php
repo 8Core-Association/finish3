@@ -260,13 +260,11 @@ class Omat_Generator
         $pdf->MultiCell(0, 7, $this->encodeText($predmetData->naziv_predmeta), 0, 'L');
         $pdf->Ln(10);
 
-        $pdf->SetFont(pdf_getPDFFont($this->langs), 'B', 11);
-        $pdf->Cell(0, 10, $this->encodeText('Mjesto za barkod'), 0, 1, 'C');
         $pdf->Rect(75, $pdf->GetY(), 60, 30);
         $pdf->Ln(35);
 
         $pdf->SetFont(pdf_getPDFFont($this->langs), 'I', 9);
-        $pdf->Cell(0, 5, $this->encodeText('(predvidjeno za buducnost - QR kod na osnovu klase)'), 0, 1, 'C');
+        $pdf->Cell(0, 5, $this->encodeText('(predviđeno za barkod)'), 0, 1, 'C');
     }
 
     /**
@@ -529,9 +527,8 @@ class Omat_Generator
         $html .= '</div>';
 
         $html .= '<div class="seup-omat-barcode">';
-        $html .= '<p style="text-align:center; margin-top: 20px;"><strong>Mjesto za barkod</strong></p>';
         $html .= '<div style="border: 1px solid #ccc; height: 80px; margin: 10px auto; width: 200px;"></div>';
-        $html .= '<p style="text-align:center; font-size: 11px; color: #666;">(predvidjeno za buducnost - QR kod)</p>';
+        $html .= '<p style="text-align:center; font-size: 11px; color: #666;">(predviđeno za barkod)</p>';
         $html .= '</div>';
 
         $html .= '</div>';
@@ -598,10 +595,6 @@ class Omat_Generator
             }
         }
 
-        $html .= '</div>';
-
-        $html .= '<div class="seup-omat-page seup-omat-page-a4">';
-        $html .= '<p style="text-align:center; color: #999; padding-top: 100px;">Stranica 3 (nastavak ako treba)</p>';
         $html .= '</div>';
 
         $html .= '<div class="seup-omat-page seup-omat-page-a4">';
