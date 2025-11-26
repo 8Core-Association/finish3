@@ -224,7 +224,7 @@ Dokumentacija ažurirana: README, struktura, changelog.
 
 ---
 
-## 4.2.5 – Omot & Stabilizacija (CURRENT)
+## 4.2.5 – Omot & Stabilizacija
 
 **Datum:** Q1 2025
 
@@ -235,5 +235,73 @@ Dokumentacija ažurirana: README, struktura, changelog.
 - 🔧 Popravke funkcionalnosti u zaprimanjima i otpremama
 - 🐛 Bugfixevi i stability improvements
 - 🚀 Priprema za production deployment
+
+---
+
+## 4.3.0 – FINA Digital Signature Detection (CURRENT)
+
+**Datum:** 26.01.2025
+
+### Nova funkcionalnost - FINA Potpisi
+- 🔏 Potpuno prepisan sustav detekcije digitalnih potpisa
+- 🏛️ Automatska detekcija FINA RDC certifikata
+- ✍️ Pravilno očitavanje imena potpisnika (UTF-16 dekodiranje)
+- 📅 Ekstrakcija datuma i vremena potpisa
+- 🎨 "FINA Potpisan" badge sa zelenim gradientom
+- 💬 Multi-line tooltip sa svim detaljima potpisa
+
+### Tehničke izmjene
+- **digital_signature_detector.class.php** - Potpuna refaktorizacija:
+  - Zamijenjeni svi regex pozivi sa binary-safe funkcijama (`strpos`, `substr`)
+  - Dodana UTF-16BE/LE detekcija i dekodiranje imena
+  - Parsiranje binarnih PKCS#7 certifikata
+  - Ekstrakcija ASN.1 OID podataka (serijski broj, država)
+  - Binary-safe parsiranje PDF timestamp formata
+
+- **predmet_helper.class.php**:
+  - Dodan `signature_info` parametar u `getSignatureBadge()`
+  - Omogućena detekcija FINA specifičnih podataka
+
+- **prilozi.css**:
+  - Redesign badge sistema sa gradient efektima
+  - Hover animacije i shadow efekti
+  - Multi-line tooltip formatting
+  - Responsive design za FINA badge
+
+### Detaljne izmjene
+
+#### UTF-16 dekodiranje
+```php
+// Detektira BOM (0xFE 0xFF ili 0xFF 0xFE)
+// Pravilno dekodira hrvatska imena: IVICA SAMARĐIĆ
+// Fallback na UTF-16BE ako nema BOM-a
+```
+
+#### FINA certifikat detekcija
+- ✅ Traži "Financijska agencija" u binary podacima
+- ✅ Traži "Fina RDC 2020" kao izdavateljsku jedinicu
+- ✅ Izvlači serijski broj (ASN.1 OID 2.5.4.5)
+- ✅ Izvlači državu (ASN.1 OID 2.5.4.6)
+- ✅ Označava kao kvalificirani potpis
+
+#### Badge i tooltip prikaz
+Tooltip struktura:
+```
+DIGITALNO POTPISAN DOKUMENT
+
+🏛️ FINA Certifikat (Kvalificirani potpis)
+Potpisnik: IVICA SAMARĐIĆ
+Datum potpisa: 14.08.2025 09:37
+Izdavatelj: Financijska agencija
+Jedinica: Fina RDC 2020
+Serijski broj: HR94151260436.7.21
+Država: HR
+```
+
+### Kompatibilnost
+- ✅ PHP 7.4+
+- ✅ Zahtijeva mbstring ekstenziju
+- ✅ Radi sa svim FINA RDC certifikatima
+- ✅ Backward compatible sa postojećim potpisima
 
 ---
