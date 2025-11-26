@@ -13,8 +13,8 @@
  */
 
 /**
- * A3 Omat Spisa Generator for SEUP Module
- * Generates A3 format document covers with predmet information and attachments list
+ * A4 Omat Spisa Generator for SEUP Module
+ * Generates A4 portrait format document covers with predmet information and hierarchical document list
  */
 class Omat_Generator
 {
@@ -32,7 +32,7 @@ class Omat_Generator
     }
 
     /**
-     * Generate A3 omat spisa for predmet
+     * Generate A4 portrait omat spisa for predmet
      */
     public function generateOmat($predmet_id, $save_to_ecm = true)
     {
@@ -41,34 +41,28 @@ class Omat_Generator
             require_once DOL_DOCUMENT_ROOT . '/ecm/class/ecmfiles.class.php';
             require_once __DIR__ . '/predmet_helper.class.php';
 
-            // Get predmet data
             $predmetData = $this->getPredmetData($predmet_id);
             if (!$predmetData) {
                 throw new Exception('Predmet not found');
             }
 
-            // Get attachments list
-            $attachments = $this->getAttachmentsList($predmet_id);
+            $aktiData = $this->getAktiWithRelations($predmet_id);
 
-            // Create PDF instance
             $pdf = pdf_getInstance();
             $pdf->SetFont(pdf_getPDFFont($this->langs), '', 12);
-            
-            // Set A3 format (297 x 420 mm)
-            $pdf->AddPage('P', array(297, 420));
-            
-            // Generate content
+
+            $pdf->AddPage('P', 'A4');
+
             $this->generatePage1($pdf, $predmetData);
-            $this->generatePage2and3($pdf, $attachments);
+            $this->generatePage2and3($pdf, $predmetData, $aktiData);
             $this->generatePage4($pdf);
 
-            // Generate filename
             $filename = $this->generateFilename($predmetData);
-            
+
             if ($save_to_ecm) {
                 return $this->saveToECM($pdf, $filename, $predmet_id);
             } else {
-                return $this->generatePreview($pdf, $predmetData, $attachments);
+                return $this->generatePreview($pdf, $predmetData, $aktiData);
             }
 
         } catch (Exception $e) {
@@ -120,173 +114,260 @@ class Omat_Generator
     }
 
     /**
-     * Get list of attachments for predmet
+     * Get akti with related prilozi, otpreme, and zaprimanja
      */
-    private function getAttachmentsList($predmet_id)
+    private function getAktiWithRelations($predmet_id)
     {
-        $relative_path = Predmet_helper::getPredmetFolderPath($predmet_id, $this->db);
-        
-        $sql = "SELECT 
+        $akti = [];
+
+        $sql = "SELECT
+                    a.ID_akta,
+                    a.urb_broj,
+                    a.datum_kreiranja,
                     ef.filename,
-                    ef.date_c,
-                    ef.label,
-                    CONCAT(u.firstname, ' ', u.lastname) as created_by
-                FROM " . MAIN_DB_PREFIX . "ecm_files ef
-                LEFT JOIN " . MAIN_DB_PREFIX . "user u ON ef.fk_user_c = u.rowid
-                WHERE ef.filepath = '" . $this->db->escape(rtrim($relative_path, '/')) . "'
-                AND ef.entity = " . $this->conf->entity . "
-                ORDER BY ef.date_c ASC";
+                    ef.rowid as ecm_file_id
+                FROM " . MAIN_DB_PREFIX . "a_akti a
+                LEFT JOIN " . MAIN_DB_PREFIX . "ecm_files ef ON a.fk_ecm_file = ef.rowid
+                WHERE a.ID_predmeta = " . (int)$predmet_id . "
+                ORDER BY a.urb_broj ASC";
 
         $resql = $this->db->query($sql);
-        $attachments = [];
         if ($resql) {
-            while ($obj = $this->db->fetch_object($resql)) {
-                $attachments[] = $obj;
+            while ($akt = $this->db->fetch_object($resql)) {
+                $akt->prilozi = $this->getPriloziForAkt($akt->ID_akta);
+                $akt->otpreme = $this->getOtpremeForDocument($akt->ecm_file_id, 'akt');
+                $akt->zaprimanja = $this->getZaprimanjaForDocument($akt->ecm_file_id, 'akt');
+                $akti[] = $akt;
             }
         }
-        
-        return $attachments;
+
+        return $akti;
     }
 
     /**
-     * Generate page 1 - Front page with basic information
+     * Get prilozi for specific akt
+     */
+    private function getPriloziForAkt($akt_id)
+    {
+        $prilozi = [];
+
+        $sql = "SELECT
+                    p.prilog_rbr,
+                    ef.filename,
+                    ef.rowid as ecm_file_id
+                FROM " . MAIN_DB_PREFIX . "a_prilozi p
+                LEFT JOIN " . MAIN_DB_PREFIX . "ecm_files ef ON p.fk_ecm_file = ef.rowid
+                WHERE p.ID_akta = " . (int)$akt_id . "
+                ORDER BY CAST(p.prilog_rbr AS UNSIGNED) ASC";
+
+        $resql = $this->db->query($sql);
+        if ($resql) {
+            while ($prilog = $this->db->fetch_object($resql)) {
+                $prilog->otpreme = $this->getOtpremeForDocument($prilog->ecm_file_id, 'prilog');
+                $prilog->zaprimanja = $this->getZaprimanjaForDocument($prilog->ecm_file_id, 'prilog');
+                $prilozi[] = $prilog;
+            }
+        }
+
+        return $prilozi;
+    }
+
+    /**
+     * Get otpreme for document
+     */
+    private function getOtpremeForDocument($ecm_file_id, $tip_dokumenta)
+    {
+        $otpreme = [];
+
+        $sql = "SELECT
+                    primatelj_naziv,
+                    datum_otpreme,
+                    nacin_otpreme
+                FROM " . MAIN_DB_PREFIX . "a_otprema
+                WHERE fk_ecm_file = " . (int)$ecm_file_id . "
+                AND tip_dokumenta = '" . $this->db->escape($tip_dokumenta) . "'
+                ORDER BY datum_otpreme ASC";
+
+        $resql = $this->db->query($sql);
+        if ($resql) {
+            while ($obj = $this->db->fetch_object($resql)) {
+                $otpreme[] = $obj;
+            }
+        }
+
+        return $otpreme;
+    }
+
+    /**
+     * Get zaprimanja for document
+     */
+    private function getZaprimanjaForDocument($ecm_file_id, $tip_dokumenta)
+    {
+        $zaprimanja = [];
+
+        $sql = "SELECT
+                    posiljatelj_naziv,
+                    datum_zaprimanja,
+                    nacin_zaprimanja
+                FROM " . MAIN_DB_PREFIX . "a_zaprimanja
+                WHERE fk_ecm_file = " . (int)$ecm_file_id . "
+                AND tip_dokumenta = '" . $this->db->escape($tip_dokumenta) . "'
+                ORDER BY datum_zaprimanja ASC";
+
+        $resql = $this->db->query($sql);
+        if ($resql) {
+            while ($obj = $this->db->fetch_object($resql)) {
+                $zaprimanja[] = $obj;
+            }
+        }
+
+        return $zaprimanja;
+    }
+
+    /**
+     * Generate page 1 - Front page with basic information (A4 Portrait)
      */
     private function generatePage1($pdf, $predmetData)
     {
-        // Set margins for A3
-        $pdf->SetMargins(20, 20, 20);
-        
-        // Set font with UTF-8 support for Croatian characters
-        $pdf->SetFont(pdf_getPDFFont($this->langs), '', 24);
-        
-        // Title
-        $pdf->SetFont(pdf_getPDFFont($this->langs), 'B', 24);
-        $pdf->Cell(0, 20, $this->encodeText('OMOT SPISA'), 0, 1, 'C');
-        $pdf->Ln(20);
+        $pdf->SetMargins(15, 15, 15);
+        $pdf->SetAutoPageBreak(false);
 
-        // Main information sections
-        $pdf->SetFont(pdf_getPDFFont($this->langs), 'B', 16);
-        
-        // Naziv tjela
-        $pdf->Cell(0, 15, $this->encodeText('NAZIV TIJELA:'), 0, 1, 'L');
-        $pdf->SetFont(pdf_getPDFFont($this->langs), '', 14);
-        $naziv_tjela = $this->encodeText($predmetData->name_ustanova . ' (' . $predmetData->code_ustanova . ')');
-        $pdf->Cell(0, 12, $naziv_tjela, 0, 1, 'L');
+        $pdf->SetFont(pdf_getPDFFont($this->langs), 'B', 12);
+        $pdf->Cell(0, 10, $this->encodeText('Naziv tijela:'), 0, 1, 'L');
+        $pdf->SetFont(pdf_getPDFFont($this->langs), '', 11);
+        $pdf->MultiCell(0, 7, $this->encodeText($predmetData->name_ustanova), 0, 'L');
+        $pdf->Ln(5);
+
+        $pdf->SetFont(pdf_getPDFFont($this->langs), 'B', 12);
+        $pdf->Cell(0, 10, $this->encodeText('Oznaka unutarnje ustrojstvene jedinice:'), 0, 1, 'L');
+        $pdf->SetFont(pdf_getPDFFont($this->langs), '', 11);
+        $pdf->Cell(0, 7, $this->encodeText($predmetData->code_ustanova), 0, 1, 'L');
+        $pdf->Ln(5);
+
+        $pdf->SetFont(pdf_getPDFFont($this->langs), 'B', 12);
+        $pdf->Cell(0, 10, $this->encodeText('Klasifikacijska oznaka:'), 0, 1, 'L');
+        $pdf->SetFont(pdf_getPDFFont($this->langs), '', 11);
+        $pdf->Cell(0, 7, $predmetData->klasa_format, 0, 1, 'L');
+        $pdf->Ln(5);
+
+        $pdf->SetFont(pdf_getPDFFont($this->langs), 'B', 12);
+        $pdf->Cell(0, 10, $this->encodeText('Predmet:'), 0, 1, 'L');
+        $pdf->SetFont(pdf_getPDFFont($this->langs), '', 11);
+        $pdf->MultiCell(0, 7, $this->encodeText($predmetData->naziv_predmeta), 0, 'L');
         $pdf->Ln(10);
 
-        // Oznaka unutarnje ustrojstvene jedinice
-        $pdf->SetFont(pdf_getPDFFont($this->langs), 'B', 16);
-        $pdf->Cell(0, 15, $this->encodeText('OZNAKA UNUTARNJE USTROJSTVENE JEDINICE:'), 0, 1, 'L');
-        $pdf->SetFont(pdf_getPDFFont($this->langs), '', 14);
-        $unutarnja_oznaka = $this->encodeText($predmetData->ime_prezime . ' (' . $predmetData->korisnik_rbr . ') - ' . $predmetData->radno_mjesto);
-        $pdf->Cell(0, 12, $unutarnja_oznaka, 0, 1, 'L');
-        $pdf->Ln(10);
+        $pdf->SetFont(pdf_getPDFFont($this->langs), 'B', 11);
+        $pdf->Cell(0, 10, $this->encodeText('Mjesto za barkod'), 0, 1, 'C');
+        $pdf->Rect(75, $pdf->GetY(), 60, 30);
+        $pdf->Ln(35);
 
-        // Klasifikacijska oznaka
-        $pdf->SetFont(pdf_getPDFFont($this->langs), 'B', 16);
-        $pdf->Cell(0, 15, $this->encodeText('KLASIFIKACIJSKA OZNAKA:'), 0, 1, 'L');
-        $pdf->SetFont(pdf_getPDFFont($this->langs), '', 14);
-        $pdf->Cell(0, 12, $predmetData->klasa_format, 0, 1, 'L');
-        if ($predmetData->opis_klasifikacijske_oznake) {
-            $pdf->SetFont(pdf_getPDFFont($this->langs), 'I', 12);
-            $pdf->MultiCell(0, 8, $this->encodeText($predmetData->opis_klasifikacijske_oznake), 0, 'L');
-        }
-        $pdf->Ln(10);
-
-        // Predmet
-        $pdf->SetFont(pdf_getPDFFont($this->langs), 'B', 16);
-        $pdf->Cell(0, 15, $this->encodeText('PREDMET:'), 0, 1, 'L');
-        $pdf->SetFont(pdf_getPDFFont($this->langs), '', 14);
-        $pdf->MultiCell(0, 10, $this->encodeText($predmetData->naziv_predmeta), 0, 'L');
-        $pdf->Ln(10);
-
-        // Datum otvaranja
-        $pdf->SetFont(pdf_getPDFFont($this->langs), 'B', 14);
-        $pdf->Cell(0, 12, $this->encodeText('DATUM OTVARANJA: ' . dol_print_date($predmetData->tstamp_created, '%d.%m.%Y')), 0, 1, 'L');
-        
-        // Vrijeme čuvanja
-        if ($predmetData->vrijeme_cuvanja == 0) {
-            $vrijeme_text = $this->encodeText('TRAJNO');
-        } else {
-            $vrijeme_text = $this->encodeText($predmetData->vrijeme_cuvanja . ' GODINA');
-        }
-        $pdf->Cell(0, 12, $this->encodeText('VRIJEME ČUVANJA: ') . $vrijeme_text, 0, 1, 'L');
+        $pdf->SetFont(pdf_getPDFFont($this->langs), 'I', 9);
+        $pdf->Cell(0, 5, $this->encodeText('(predvidjeno za buducnost - QR kod na osnovu klase)'), 0, 1, 'C');
     }
 
     /**
-     * Generate pages 2 and 3 - Attachments list
+     * Generate pages 2 and 3 - Hierarchical document list (A4 Portrait)
      */
-    private function generatePage2and3($pdf, $attachments)
+    private function generatePage2and3($pdf, $predmetData, $aktiData)
     {
-        // Add new page for attachments
-        $pdf->AddPage('P', array(297, 420));
-        
-        // Title
-        $pdf->SetFont(pdf_getPDFFont($this->langs), 'B', 20);
-        $pdf->Cell(0, 15, $this->encodeText('POPIS PRIVITAKA'), 0, 1, 'C');
-        $pdf->Ln(10);
+        $pdf->AddPage('P', 'A4');
+        $pdf->SetMargins(15, 15, 15);
 
-        if (empty($attachments)) {
-            $pdf->SetFont(pdf_getPDFFont($this->langs), 'I', 14);
-            $pdf->Cell(0, 12, $this->encodeText('Nema privitaka'), 0, 1, 'C');
+        if (empty($aktiData)) {
+            $pdf->SetFont(pdf_getPDFFont($this->langs), 'I', 11);
+            $pdf->Cell(0, 10, $this->encodeText('Nema dokumenata'), 0, 1, 'C');
+            $pdf->AddPage('P', 'A4');
             return;
         }
 
-        // Table header
-        $pdf->SetFont(pdf_getPDFFont($this->langs), 'B', 12);
-        $pdf->Cell(20, 10, $this->encodeText('Rb.'), 1, 0, 'C');
-        $pdf->Cell(180, 10, $this->encodeText('Opis'), 1, 0, 'C');
-        $pdf->Cell(50, 10, $this->encodeText('Datum dodavanja'), 1, 1, 'C');
-
-        // Table content
-        $pdf->SetFont(pdf_getPDFFont($this->langs), '', 11);
         $rb = 1;
-        
-        foreach ($attachments as $attachment) {
-            // Check if we need a new page
-            if ($pdf->GetY() > 380) { // Near bottom of A3 page
-                $pdf->AddPage('P', array(297, 420));
-                
-                // Repeat header on new page
-                $pdf->SetFont(pdf_getPDFFont($this->langs), 'B', 12);
-                $pdf->Cell(20, 10, $this->encodeText('Rb.'), 1, 0, 'C');
-                $pdf->Cell(180, 10, $this->encodeText('Opis'), 1, 0, 'C');
-                $pdf->Cell(50, 10, $this->encodeText('Datum dodavanja'), 1, 1, 'C');
-                $pdf->SetFont(pdf_getPDFFont($this->langs), '', 11);
+        foreach ($aktiData as $akt) {
+            if ($pdf->GetY() > 260) {
+                $pdf->AddPage('P', 'A4');
             }
 
-            $datum_formatted = dol_print_date($attachment->date_c, '%d.%m.%Y');
-            
-            // Calculate row height based on description length
-            $desc_lines = $pdf->GetStringWidth($attachment->filename) > 170 ? 2 : 1;
-            $row_height = $desc_lines * 8;
+            $akt_oznaka = $this->generateAktOznaka($predmetData, $akt->urb_broj);
 
-            $pdf->Cell(20, $row_height, $rb, 1, 0, 'C');
-            
-            // Multi-line description if needed
-            $x = $pdf->GetX();
-            $y = $pdf->GetY();
-            $pdf->MultiCell(180, 8, $this->encodeText($attachment->filename), 1, 'L');
-            $pdf->SetXY($x + 180, $y);
-            
-            $pdf->Cell(50, $row_height, $datum_formatted, 1, 1, 'C');
-            
+            $pdf->SetFont(pdf_getPDFFont($this->langs), 'B', 10);
+            $pdf->Cell(10, 6, $rb . '.', 0, 0, 'L');
+            $pdf->Cell(0, 6, $akt_oznaka, 0, 1, 'L');
+
+            if (!empty($akt->prilozi)) {
+                $prilog_rb = 1;
+                foreach ($akt->prilozi as $prilog) {
+                    if ($pdf->GetY() > 270) {
+                        $pdf->AddPage('P', 'A4');
+                    }
+
+                    $pdf->SetFont(pdf_getPDFFont($this->langs), '', 9);
+                    $pdf->Cell(15, 5, '', 0, 0, 'L');
+                    $pdf->Cell(0, 5, $this->encodeText('- Prilog: rb ' . $prilog_rb), 0, 1, 'L');
+
+                    if (!empty($prilog->otpreme)) {
+                        foreach ($prilog->otpreme as $otprema) {
+                            $pdf->SetFont(pdf_getPDFFont($this->langs), 'I', 8);
+                            $pdf->Cell(25, 4, '', 0, 0, 'L');
+                            $pdf->Cell(0, 4, $this->encodeText('* Otprema: ' . $otprema->primatelj_naziv), 0, 1, 'L');
+                        }
+                    }
+
+                    if (!empty($prilog->zaprimanja)) {
+                        foreach ($prilog->zaprimanja as $zaprimanje) {
+                            $pdf->SetFont(pdf_getPDFFont($this->langs), 'I', 8);
+                            $pdf->Cell(25, 4, '', 0, 0, 'L');
+                            $pdf->Cell(0, 4, $this->encodeText('* Zaprimanje: ' . $zaprimanje->posiljatelj_naziv), 0, 1, 'L');
+                        }
+                    }
+
+                    $prilog_rb++;
+                }
+            }
+
+            if (!empty($akt->otpreme)) {
+                foreach ($akt->otpreme as $otprema) {
+                    $pdf->SetFont(pdf_getPDFFont($this->langs), 'I', 9);
+                    $pdf->Cell(15, 4, '', 0, 0, 'L');
+                    $pdf->Cell(0, 4, $this->encodeText('- Otprema: ' . $otprema->primatelj_naziv), 0, 1, 'L');
+                }
+            }
+
+            if (!empty($akt->zaprimanja)) {
+                foreach ($akt->zaprimanja as $zaprimanje) {
+                    $pdf->SetFont(pdf_getPDFFont($this->langs), 'I', 9);
+                    $pdf->Cell(15, 4, '', 0, 0, 'L');
+                    $pdf->Cell(0, 4, $this->encodeText('- Zaprimanje: ' . $zaprimanje->posiljatelj_naziv), 0, 1, 'L');
+                }
+            }
+
+            $pdf->Ln(3);
             $rb++;
+        }
+
+        if ($pdf->PageNo() == 2) {
+            $pdf->AddPage('P', 'A4');
         }
     }
 
     /**
-     * Generate page 4 - Empty back page
+     * Generate akt oznaka: [code_ustanova]-[rbr_zaposlenika]-[godina]-[urb_broj]
+     */
+    private function generateAktOznaka($predmetData, $urb_broj)
+    {
+        return sprintf(
+            '[%s]-[%s]-[%s]-[%s]',
+            $predmetData->code_ustanova,
+            $predmetData->korisnik_rbr,
+            $predmetData->godina,
+            $urb_broj
+        );
+    }
+
+    /**
+     * Generate page 4 - Empty back page (A4 Portrait)
      */
     private function generatePage4($pdf)
     {
-        // Add new page for back cover
-        $pdf->AddPage('P', array(297, 420));
-        
-        // For now, just add a small footer
-        $pdf->SetY(-30);
-        $pdf->SetFont(pdf_getPDFFont($this->langs), 'I', 10);
-        $pdf->Cell(0, 10, $this->encodeText('Generirano: ' . dol_print_date(dol_now(), '%d.%m.%Y %H:%M')), 0, 1, 'C');
+        $pdf->AddPage('P', 'A4');
     }
 
     /**
@@ -379,13 +460,13 @@ class Omat_Generator
                 throw new Exception('Predmet not found');
             }
 
-            $attachments = $this->getAttachmentsList($predmet_id);
+            $aktiData = $this->getAktiWithRelations($predmet_id);
 
             return [
                 'success' => true,
                 'predmet' => $predmetData,
-                'attachments' => $attachments,
-                'preview_html' => $this->generatePreviewHTML($predmetData, $attachments)
+                'akti' => $aktiData,
+                'preview_html' => $this->generatePreviewHTML($predmetData, $aktiData)
             ];
 
         } catch (Exception $e) {
@@ -399,74 +480,102 @@ class Omat_Generator
     /**
      * Generate HTML preview for modal
      */
-    private function generatePreviewHTML($predmetData, $attachments)
+    private function generatePreviewHTML($predmetData, $aktiData)
     {
         $html = '<div class="seup-omat-preview">';
-        
-        // Page 1 preview
-        $html .= '<div class="seup-omat-page">';
-        $html .= '<h3 class="seup-omat-title">OMOT SPISA</h3>';
-        
+
+        $html .= '<div class="seup-omat-page seup-omat-page-a4">';
         $html .= '<div class="seup-omat-section">';
-        $html .= '<h4>NAZIV TIJELA:</h4>';
-        $html .= '<p>' . htmlspecialchars($predmetData->name_ustanova . ' (' . $predmetData->code_ustanova . ')') . '</p>';
+        $html .= '<h4>Naziv tijela:</h4>';
+        $html .= '<p>' . htmlspecialchars($predmetData->name_ustanova) . '</p>';
         $html .= '</div>';
-        
+
         $html .= '<div class="seup-omat-section">';
-        $html .= '<h4>OZNAKA UNUTARNJE USTROJSTVENE JEDINICE:</h4>';
-        $html .= '<p>' . htmlspecialchars($predmetData->ime_prezime . ' (' . $predmetData->korisnik_rbr . ') - ' . $predmetData->radno_mjesto) . '</p>';
+        $html .= '<h4>Oznaka unutarnje ustrojstvene jedinice:</h4>';
+        $html .= '<p>' . htmlspecialchars($predmetData->code_ustanova) . '</p>';
         $html .= '</div>';
-        
+
         $html .= '<div class="seup-omat-section">';
-        $html .= '<h4>KLASIFIKACIJSKA OZNAKA:</h4>';
+        $html .= '<h4>Klasifikacijska oznaka:</h4>';
         $html .= '<p>' . htmlspecialchars($predmetData->klasa_format) . '</p>';
-        if ($predmetData->opis_klasifikacijske_oznake) {
-            $html .= '<p class="seup-omat-desc">' . htmlspecialchars($predmetData->opis_klasifikacijske_oznake) . '</p>';
-        }
         $html .= '</div>';
-        
+
         $html .= '<div class="seup-omat-section">';
-        $html .= '<h4>PREDMET:</h4>';
+        $html .= '<h4>Predmet:</h4>';
         $html .= '<p>' . htmlspecialchars($predmetData->naziv_predmeta) . '</p>';
         $html .= '</div>';
-        
-        $html .= '<div class="seup-omat-meta">';
-        $html .= '<p><strong>Datum otvaranja:</strong> ' . dol_print_date($predmetData->tstamp_created, '%d.%m.%Y') . '</p>';
-        $vrijeme_text = ($predmetData->vrijeme_cuvanja == 0) ? 'TRAJNO' : $predmetData->vrijeme_cuvanja . ' GODINA';
-        $html .= '<p><strong>Vrijeme čuvanja:</strong> ' . $vrijeme_text . '</p>';
+
+        $html .= '<div class="seup-omat-barcode">';
+        $html .= '<p style="text-align:center; margin-top: 20px;"><strong>Mjesto za barkod</strong></p>';
+        $html .= '<div style="border: 1px solid #ccc; height: 80px; margin: 10px auto; width: 200px;"></div>';
+        $html .= '<p style="text-align:center; font-size: 11px; color: #666;">(predvidjeno za buducnost - QR kod)</p>';
         $html .= '</div>';
-        
-        $html .= '</div>'; // seup-omat-page
-        
-        // Attachments preview
-        $html .= '<div class="seup-omat-page">';
-        $html .= '<h3 class="seup-omat-title">POPIS PRIVITAKA</h3>';
-        
-        if (empty($attachments)) {
-            $html .= '<p class="seup-omat-empty">Nema privitaka</p>';
+
+        $html .= '</div>';
+
+        $html .= '<div class="seup-omat-page seup-omat-page-a4">';
+        $html .= '<h3 class="seup-omat-title" style="font-size: 14px; margin-bottom: 15px;">POPIS DOKUMENATA</h3>';
+
+        if (empty($aktiData)) {
+            $html .= '<p class="seup-omat-empty">Nema dokumenata</p>';
         } else {
-            $html .= '<table class="seup-omat-table">';
-            $html .= '<thead>';
-            $html .= '<tr><th>Rb.</th><th>Opis</th><th>Datum dodavanja</th></tr>';
-            $html .= '</thead>';
-            $html .= '<tbody>';
-            
-            foreach ($attachments as $index => $attachment) {
-                $html .= '<tr>';
-                $html .= '<td>' . ($index + 1) . '</td>';
-                $html .= '<td>' . htmlspecialchars($attachment->filename) . '</td>';
-                $html .= '<td>' . dol_print_date($attachment->date_c, '%d.%m.%Y') . '</td>';
-                $html .= '</tr>';
+            $rb = 1;
+            foreach ($aktiData as $akt) {
+                $akt_oznaka = $this->generateAktOznaka($predmetData, $akt->urb_broj);
+
+                $html .= '<div class="seup-omat-akt" style="margin-bottom: 15px;">';
+                $html .= '<div style="font-weight: bold; margin-bottom: 5px;">' . $rb . '. ' . htmlspecialchars($akt_oznaka) . '</div>';
+
+                if (!empty($akt->prilozi)) {
+                    $prilog_rb = 1;
+                    foreach ($akt->prilozi as $prilog) {
+                        $html .= '<div style="margin-left: 20px; font-size: 13px;">- Prilog: rb ' . $prilog_rb . '</div>';
+
+                        if (!empty($prilog->otpreme)) {
+                            foreach ($prilog->otpreme as $otprema) {
+                                $html .= '<div style="margin-left: 40px; font-size: 12px; font-style: italic; color: #555;">* Otprema: ' . htmlspecialchars($otprema->primatelj_naziv) . '</div>';
+                            }
+                        }
+
+                        if (!empty($prilog->zaprimanja)) {
+                            foreach ($prilog->zaprimanja as $zaprimanje) {
+                                $html .= '<div style="margin-left: 40px; font-size: 12px; font-style: italic; color: #555;">* Zaprimanje: ' . htmlspecialchars($zaprimanje->posiljatelj_naziv) . '</div>';
+                            }
+                        }
+
+                        $prilog_rb++;
+                    }
+                }
+
+                if (!empty($akt->otpreme)) {
+                    foreach ($akt->otpreme as $otprema) {
+                        $html .= '<div style="margin-left: 20px; font-size: 13px; font-style: italic;">- Otprema: ' . htmlspecialchars($otprema->primatelj_naziv) . '</div>';
+                    }
+                }
+
+                if (!empty($akt->zaprimanja)) {
+                    foreach ($akt->zaprimanja as $zaprimanje) {
+                        $html .= '<div style="margin-left: 20px; font-size: 13px; font-style: italic;">- Zaprimanje: ' . htmlspecialchars($zaprimanje->posiljatelj_naziv) . '</div>';
+                    }
+                }
+
+                $html .= '</div>';
+                $rb++;
             }
-            
-            $html .= '</tbody>';
-            $html .= '</table>';
         }
-        
-        $html .= '</div>'; // seup-omat-page
-        
-        $html .= '</div>'; // seup-omat-preview
-        
+
+        $html .= '</div>';
+
+        $html .= '<div class="seup-omat-page seup-omat-page-a4">';
+        $html .= '<p style="text-align:center; color: #999; padding-top: 100px;">Stranica 3 (nastavak ako treba)</p>';
+        $html .= '</div>';
+
+        $html .= '<div class="seup-omat-page seup-omat-page-a4">';
+        $html .= '<p style="text-align:center; color: #999; padding-top: 100px;">Stranica 4 (prazna zadnja stranica)</p>';
+        $html .= '</div>';
+
+        $html .= '</div>';
+
         return $html;
     }
 
