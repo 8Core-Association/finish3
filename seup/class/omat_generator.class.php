@@ -360,7 +360,10 @@ class Omat_Generator
                 }
             }
 
-            $pdf->Ln(3);
+            $pdf->Ln(5);
+            $pdf->SetDrawColor(200, 200, 200);
+            $pdf->Line(15, $pdf->GetY(), 195, $pdf->GetY());
+            $pdf->Ln(5);
             $rb++;
         }
 
@@ -590,6 +593,7 @@ class Omat_Generator
                     }
                 }
 
+                $html .= '<div style="border-bottom: 1px solid #ddd; margin: 15px 0;"></div>';
                 $html .= '</div>';
                 $rb++;
             }
