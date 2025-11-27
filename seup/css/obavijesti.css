@@ -1,7 +1,8 @@
 .obavijesti-bell-container {
-    position: relative;
-    display: inline-block;
-    margin-left: 20px;
+    position: fixed;
+    top: 20px;
+    right: 20px;
+    z-index: 10000;
     cursor: pointer;
 }
 

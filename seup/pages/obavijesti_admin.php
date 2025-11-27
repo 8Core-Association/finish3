@@ -126,6 +126,8 @@ if ($action == 'edit' && $obavijest_id) {
 }
 
 llxHeader('', 'Upravljanje obavijestima', '');
+
+print '<link href="../css/obavijesti.css" rel="stylesheet">';
 ?>
 
 <div class="obavijesti-admin-container">
