@@ -180,6 +180,7 @@ print '<link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;5
 print '<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">';
 print '<link href="/custom/seup/css/seup-modern.css" rel="stylesheet">';
 print '<link href="css/setup-modal.css" rel="stylesheet">';
+print '<link href="css/obavijesti.css" rel="stylesheet">';
 
 // Main hero section
 print '<main class="seup-hero">';
@@ -266,6 +267,24 @@ print '</div>';
 
 print '</div>'; // seup-stats-grid
 print '</div>'; // seup-stats
+
+// Bell icon for notifications
+print '<div class="obavijesti-bell-container" onclick="obavijestiBellToggleDropdown()">';
+print '  <i class="fa fa-bell obavijesti-bell-icon"></i>';
+print '  <span class="obavijesti-bell-badge" style="display: none;">0</span>';
+print '  <div class="obavijesti-dropdown">';
+print '    <div class="obavijesti-dropdown-header">';
+print '      <h3>Obavijesti</h3>';
+print '      <button class="obavijesti-mark-all-read" onclick="event.stopPropagation(); obavijestiBellMarkAllAsRead();">Označi sve pročitano</button>';
+print '    </div>';
+print '    <div class="obavijesti-dropdown-body"></div>';
+print '  </div>';
+print '</div>';
+
+// Notification slider
+print '<div class="obavijesti-slider" style="display: none;">';
+print '  <div class="obavijesti-slider-content"></div>';
+print '</div>';
 
 print '</div>'; // seup-hero-content
 print '</main>';
@@ -410,6 +429,8 @@ print '}';
 print '</script>';
 print '<script src="/custom/seup/js/seup-modern.js"></script>';
 print '<script src="js/setup-modal.js"></script>';
+print '<script src="js/obavijesti.js"></script>';
+print '<audio id="obavijesti-bell-sound" src="sounds/notification.mp3" preload="auto"></audio>';
 
 // End of page
 llxFooter();

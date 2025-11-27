@@ -1,0 +1,545 @@
+.obavijesti-bell-container {
+    position: relative;
+    display: inline-block;
+    margin-left: 20px;
+    cursor: pointer;
+}
+
+.obavijesti-bell-icon {
+    font-size: 24px;
+    color: #FFC107;
+    position: relative;
+    transition: transform 0.3s ease;
+}
+
+.obavijesti-bell-icon:hover {
+    transform: scale(1.1);
+}
+
+.obavijesti-bell-icon.has-unread {
+    animation: bellShake 0.8s ease-in-out infinite, bellPulse 1.5s ease-in-out infinite;
+}
+
+.obavijesti-bell-badge {
+    position: absolute;
+    top: -8px;
+    right: -8px;
+    background-color: #dc3545;
+    color: white;
+    border-radius: 50%;
+    width: 20px;
+    height: 20px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 11px;
+    font-weight: bold;
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
+    animation: badgePulse 1.5s ease-in-out infinite;
+}
+
+@keyframes bellShake {
+    0%, 100% { transform: rotate(0deg); }
+    10%, 30%, 50%, 70%, 90% { transform: rotate(-10deg); }
+    20%, 40%, 60%, 80% { transform: rotate(10deg); }
+}
+
+@keyframes bellPulse {
+    0%, 100% { opacity: 1; }
+    50% { opacity: 0.7; }
+}
+
+@keyframes badgePulse {
+    0%, 100% { transform: scale(1); }
+    50% { transform: scale(1.2); }
+}
+
+.obavijesti-dropdown {
+    position: absolute;
+    top: calc(100% + 10px);
+    right: 0;
+    background: white;
+    border: 1px solid #ddd;
+    border-radius: 8px;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+    width: 400px;
+    max-height: 500px;
+    overflow-y: auto;
+    z-index: 9999;
+    display: none;
+}
+
+.obavijesti-dropdown.show {
+    display: block;
+    animation: dropdownFadeIn 0.3s ease;
+}
+
+@keyframes dropdownFadeIn {
+    from {
+        opacity: 0;
+        transform: translateY(-10px);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+.obavijesti-dropdown-header {
+    padding: 15px;
+    border-bottom: 1px solid #eee;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    background: #f8f9fa;
+    border-radius: 8px 8px 0 0;
+}
+
+.obavijesti-dropdown-header h3 {
+    margin: 0;
+    font-size: 16px;
+    color: #333;
+}
+
+.obavijesti-mark-all-read {
+    background: transparent;
+    border: none;
+    color: #007bff;
+    font-size: 12px;
+    cursor: pointer;
+    padding: 5px 10px;
+    border-radius: 4px;
+    transition: background 0.2s;
+}
+
+.obavijesti-mark-all-read:hover {
+    background: rgba(0, 123, 255, 0.1);
+}
+
+.obavijesti-dropdown-body {
+    max-height: 400px;
+    overflow-y: auto;
+}
+
+.obavijesti-item {
+    padding: 15px;
+    border-bottom: 1px solid #eee;
+    cursor: pointer;
+    transition: background 0.2s;
+    position: relative;
+}
+
+.obavijesti-item:last-child {
+    border-bottom: none;
+}
+
+.obavijesti-item:hover {
+    background: #f8f9fa;
+}
+
+.obavijesti-item.unread {
+    background: #e7f3ff;
+    border-left: 4px solid #007bff;
+}
+
+.obavijesti-item.unread:hover {
+    background: #d0e9ff;
+}
+
+.obavijesti-item-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 8px;
+}
+
+.obavijesti-item-title {
+    font-weight: bold;
+    color: #333;
+    font-size: 14px;
+}
+
+.obavijesti-item-badge {
+    font-size: 10px;
+    padding: 3px 8px;
+    border-radius: 12px;
+    text-transform: uppercase;
+    font-weight: bold;
+}
+
+.obavijesti-item-badge.info {
+    background: #d1ecf1;
+    color: #0c5460;
+}
+
+.obavijesti-item-badge.upozorenje {
+    background: #fff3cd;
+    color: #856404;
+}
+
+.obavijesti-item-badge.tutorial {
+    background: #d4edda;
+    color: #155724;
+}
+
+.obavijesti-item-content {
+    color: #666;
+    font-size: 13px;
+    line-height: 1.4;
+    margin-bottom: 8px;
+}
+
+.obavijesti-item-footer {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+
+.obavijesti-item-date {
+    font-size: 11px;
+    color: #999;
+}
+
+.obavijesti-item-link {
+    font-size: 12px;
+    color: #007bff;
+    text-decoration: none;
+    display: inline-flex;
+    align-items: center;
+    gap: 5px;
+}
+
+.obavijesti-item-link:hover {
+    text-decoration: underline;
+}
+
+.obavijesti-empty {
+    padding: 40px 20px;
+    text-align: center;
+    color: #999;
+}
+
+.obavijesti-empty i {
+    font-size: 48px;
+    margin-bottom: 10px;
+    color: #ddd;
+}
+
+.obavijesti-slider {
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    border-radius: 12px;
+    padding: 20px;
+    margin: 20px 0;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+    position: relative;
+    overflow: hidden;
+}
+
+.obavijesti-slider::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: linear-gradient(45deg, rgba(255, 255, 255, 0.1) 0%, transparent 100%);
+    pointer-events: none;
+}
+
+.obavijesti-slider-content {
+    position: relative;
+    z-index: 1;
+}
+
+.obavijesti-slider-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 15px;
+}
+
+.obavijesti-slider-title {
+    color: white;
+    font-size: 18px;
+    font-weight: bold;
+    margin: 0;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+}
+
+.obavijesti-slider-close {
+    background: rgba(255, 255, 255, 0.2);
+    border: none;
+    color: white;
+    width: 30px;
+    height: 30px;
+    border-radius: 50%;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: background 0.2s;
+}
+
+.obavijesti-slider-close:hover {
+    background: rgba(255, 255, 255, 0.3);
+}
+
+.obavijesti-slider-body {
+    color: white;
+    font-size: 14px;
+    line-height: 1.6;
+    margin-bottom: 15px;
+}
+
+.obavijesti-slider-footer {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+
+.obavijesti-slider-date {
+    color: rgba(255, 255, 255, 0.8);
+    font-size: 12px;
+}
+
+.obavijesti-slider-link {
+    background: white;
+    color: #667eea;
+    padding: 8px 16px;
+    border-radius: 6px;
+    text-decoration: none;
+    font-size: 13px;
+    font-weight: bold;
+    transition: transform 0.2s, box-shadow 0.2s;
+    display: inline-flex;
+    align-items: center;
+    gap: 5px;
+}
+
+.obavijesti-slider-link:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
+}
+
+.obavijesti-slider-navigation {
+    display: flex;
+    gap: 10px;
+    align-items: center;
+}
+
+.obavijesti-slider-nav-btn {
+    background: rgba(255, 255, 255, 0.2);
+    border: none;
+    color: white;
+    width: 35px;
+    height: 35px;
+    border-radius: 50%;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: background 0.2s;
+}
+
+.obavijesti-slider-nav-btn:hover {
+    background: rgba(255, 255, 255, 0.3);
+}
+
+.obavijesti-slider-dots {
+    display: flex;
+    gap: 8px;
+}
+
+.obavijesti-slider-dot {
+    width: 8px;
+    height: 8px;
+    border-radius: 50%;
+    background: rgba(255, 255, 255, 0.4);
+    cursor: pointer;
+    transition: background 0.2s, transform 0.2s;
+}
+
+.obavijesti-slider-dot.active {
+    background: white;
+    transform: scale(1.2);
+}
+
+.obavijesti-admin-container {
+    padding: 20px;
+    max-width: 1200px;
+    margin: 0 auto;
+}
+
+.obavijesti-admin-container h1 {
+    margin-bottom: 20px;
+    color: #333;
+}
+
+.obavijesti-admin-form {
+    background: white;
+    padding: 25px;
+    border-radius: 8px;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+    margin-bottom: 30px;
+}
+
+.obavijesti-admin-form h2 {
+    margin-top: 0;
+    margin-bottom: 20px;
+    color: #555;
+}
+
+.obavijesti-admin-form .form-group {
+    margin-bottom: 20px;
+}
+
+.obavijesti-admin-form label {
+    display: block;
+    margin-bottom: 8px;
+    font-weight: 600;
+    color: #333;
+}
+
+.obavijesti-admin-form .form-control {
+    width: 100%;
+    padding: 10px;
+    border: 1px solid #ddd;
+    border-radius: 4px;
+    font-size: 14px;
+}
+
+.obavijesti-admin-form .form-control:focus {
+    outline: none;
+    border-color: #007bff;
+    box-shadow: 0 0 0 3px rgba(0, 123, 255, 0.1);
+}
+
+.obavijesti-admin-form .form-actions {
+    display: flex;
+    gap: 10px;
+}
+
+.obavijesti-admin-list {
+    background: white;
+    padding: 25px;
+    border-radius: 8px;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+}
+
+.obavijesti-admin-list h2 {
+    margin-top: 0;
+    margin-bottom: 20px;
+    color: #555;
+}
+
+.obavijesti-admin-list table {
+    width: 100%;
+    border-collapse: collapse;
+}
+
+.obavijesti-admin-list table th {
+    background: #f8f9fa;
+    padding: 12px;
+    text-align: left;
+    font-weight: 600;
+    color: #333;
+    border-bottom: 2px solid #dee2e6;
+}
+
+.obavijesti-admin-list table td {
+    padding: 12px;
+    border-bottom: 1px solid #dee2e6;
+}
+
+.obavijesti-admin-list .obavijest-neaktivna {
+    opacity: 0.5;
+}
+
+.alert {
+    padding: 15px;
+    border-radius: 4px;
+    margin-bottom: 20px;
+}
+
+.alert-success {
+    background: #d4edda;
+    color: #155724;
+    border: 1px solid #c3e6cb;
+}
+
+.alert-danger {
+    background: #f8d7da;
+    color: #721c24;
+    border: 1px solid #f5c6cb;
+}
+
+.btn {
+    padding: 10px 20px;
+    border: none;
+    border-radius: 4px;
+    cursor: pointer;
+    font-size: 14px;
+    transition: background 0.2s;
+}
+
+.btn-primary {
+    background: #007bff;
+    color: white;
+}
+
+.btn-primary:hover {
+    background: #0056b3;
+}
+
+.btn-secondary {
+    background: #6c757d;
+    color: white;
+}
+
+.btn-secondary:hover {
+    background: #545b62;
+}
+
+.btn-sm {
+    padding: 5px 10px;
+    font-size: 12px;
+}
+
+.btn-danger {
+    background: #dc3545;
+    color: white;
+}
+
+.btn-danger:hover {
+    background: #c82333;
+}
+
+.badge {
+    display: inline-block;
+    padding: 5px 10px;
+    border-radius: 12px;
+    font-size: 12px;
+    font-weight: bold;
+}
+
+.badge-info {
+    background: #17a2b8;
+    color: white;
+}
+
+.badge-warning {
+    background: #ffc107;
+    color: #212529;
+}
+
+.badge-success {
+    background: #28a745;
+    color: white;
+}
+
+.badge-secondary {
+    background: #6c757d;
+    color: white;
+}
