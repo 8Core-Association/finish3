@@ -28,3 +28,22 @@ CREATE TABLE IF NOT EXISTS PREFIX_a_seup_obavijesti_procitane (
     CONSTRAINT fk_obavijest_procitana FOREIGN KEY (fk_obavijest)
         REFERENCES PREFIX_a_seup_obavijesti(rowid) ON DELETE CASCADE
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+-- Testni podaci (dodaje se samo ako nema podataka)
+INSERT INTO PREFIX_a_seup_obavijesti (naslov, sadrzaj, tip, aktivan, fk_user_kreirao)
+SELECT 'Dobrodošli u SEUP sustav!',
+       'Ovo je testna obavijest. Sustav obavijesti omogućuje administratorima slanje važnih poruka svim korisnicima.',
+       'info', 1, 1
+WHERE NOT EXISTS (SELECT 1 FROM PREFIX_a_seup_obavijesti WHERE naslov = 'Dobrodošli u SEUP sustav!');
+
+INSERT INTO PREFIX_a_seup_obavijesti (naslov, sadrzaj, tip, aktivan, fk_user_kreirao)
+SELECT 'Pogledajte tutorial za novi modul',
+       'Naučite kako koristiti modul obavijesti u samo 5 minuta. Kliknite na link za pristup videu.',
+       'tutorial', 1, 1
+WHERE NOT EXISTS (SELECT 1 FROM PREFIX_a_seup_obavijesti WHERE naslov = 'Pogledajte tutorial za novi modul');
+
+INSERT INTO PREFIX_a_seup_obavijesti (naslov, sadrzaj, tip, aktivan, fk_user_kreirao)
+SELECT 'Važno upozorenje',
+       'Sustav će biti u održavanju sutra od 02:00 do 04:00. Molimo vas da sačuvate sav rad prije tog vremena.',
+       'upozorenje', 1, 1
+WHERE NOT EXISTS (SELECT 1 FROM PREFIX_a_seup_obavijesti WHERE naslov = 'Važno upozorenje');
