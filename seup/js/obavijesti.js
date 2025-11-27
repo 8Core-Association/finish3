@@ -24,9 +24,12 @@ function obavijestiBellLoadData() {
     fetch(window.location.origin + '/seup/class/autocomplete.php?action=get_obavijesti')
         .then(response => response.json())
         .then(data => {
+            console.log('Obavijesti API response:', data);
             if (data.success) {
                 obavijestiBellUpdateBell(data.data);
                 obavijestiBellUpdateSlider(data.data);
+            } else {
+                console.error('API returned success=false');
             }
         })
         .catch(error => {
@@ -38,8 +41,12 @@ function obavijestiBellUpdateBell(obavijesti) {
     const bellIcon = document.querySelector('.obavijesti-bell-icon');
     const bellBadge = document.querySelector('.obavijesti-bell-badge');
 
+    console.log('Bell update - bellIcon:', bellIcon, 'bellBadge:', bellBadge);
+    console.log('Obavijesti count:', obavijesti.length);
+
     const neprocitane = obavijesti.filter(o => !o.procitana);
     const count = neprocitane.length;
+    console.log('Neprocitane count:', count);
 
     if (count > 0) {
         bellIcon.classList.add('has-unread');
