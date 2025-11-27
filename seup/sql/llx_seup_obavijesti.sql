@@ -1,5 +1,6 @@
 -- Tablica za obavijesti
-CREATE TABLE IF NOT EXISTS llx_seup_obavijesti (
+-- NAPOMENA: PREFIX tablice se postavlja dinamički kroz MAIN_DB_PREFIX konstantu
+CREATE TABLE IF NOT EXISTS PREFIX_seup_obavijesti (
     rowid INT AUTO_INCREMENT PRIMARY KEY,
     naslov VARCHAR(255) NOT NULL,
     sadrzaj TEXT NOT NULL,
@@ -15,7 +16,7 @@ CREATE TABLE IF NOT EXISTS llx_seup_obavijesti (
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 -- Tablica za praćenje pročitanih obavijesti
-CREATE TABLE IF NOT EXISTS llx_seup_obavijesti_procitane (
+CREATE TABLE IF NOT EXISTS PREFIX_seup_obavijesti_procitane (
     rowid INT AUTO_INCREMENT PRIMARY KEY,
     fk_user INT NOT NULL,
     fk_obavijest INT NOT NULL,
@@ -24,5 +25,5 @@ CREATE TABLE IF NOT EXISTS llx_seup_obavijesti_procitane (
     INDEX idx_user (fk_user),
     INDEX idx_obavijest (fk_obavijest),
     CONSTRAINT fk_obavijest_procitana FOREIGN KEY (fk_obavijest)
-        REFERENCES llx_seup_obavijesti(rowid) ON DELETE CASCADE
+        REFERENCES PREFIX_seup_obavijesti(rowid) ON DELETE CASCADE
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
