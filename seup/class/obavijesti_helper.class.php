@@ -14,7 +14,7 @@ class ObavijestHelper
     public function getAktivneObavijesti()
     {
         $sql = "SELECT rowid, naslov, sadrzaj, tip, vanjski_link, datum_kreiranja
-                FROM a_seup_obavijesti
+                FROM " . MAIN_DB_PREFIX . "a_seup_obavijesti
                 WHERE aktivan = 1
                 ORDER BY datum_kreiranja DESC";
 
@@ -53,7 +53,7 @@ class ObavijestHelper
 
     public function isObavijestProcitana($obavijest_id)
     {
-        $sql = "SELECT rowid FROM a_seup_obavijesti_procitane
+        $sql = "SELECT rowid FROM " . MAIN_DB_PREFIX . "a_seup_obavijesti_procitane
                 WHERE fk_user = " . ((int) $this->user->id) . "
                 AND fk_obavijest = " . ((int) $obavijest_id);
 
@@ -72,7 +72,7 @@ class ObavijestHelper
             return true;
         }
 
-        $sql = "INSERT INTO a_seup_obavijesti_procitane
+        $sql = "INSERT INTO " . MAIN_DB_PREFIX . "a_seup_obavijesti_procitane
                 (fk_user, fk_obavijest, datum_procitano)
                 VALUES (" . ((int) $this->user->id) . ", " . ((int) $obavijest_id) . ", NOW())";
 
@@ -99,7 +99,7 @@ class ObavijestHelper
 
     public function createObavijest($data)
     {
-        $sql = "INSERT INTO a_seup_obavijesti
+        $sql = "INSERT INTO " . MAIN_DB_PREFIX . "a_seup_obavijesti
                 (naslov, sadrzaj, tip, vanjski_link, aktivan, fk_user_kreirao)
                 VALUES (
                     '" . $this->db->escape($data['naslov']) . "',
@@ -112,12 +112,12 @@ class ObavijestHelper
 
         $resql = $this->db->query($sql);
 
-        return $resql ? $this->db->last_insert_id("a_seup_obavijesti") : false;
+        return $resql ? $this->db->last_insert_id(MAIN_DB_PREFIX . "a_seup_obavijesti") : false;
     }
 
     public function updateObavijest($rowid, $data)
     {
-        $sql = "UPDATE a_seup_obavijesti SET
+        $sql = "UPDATE " . MAIN_DB_PREFIX . "a_seup_obavijesti SET
                 naslov = '" . $this->db->escape($data['naslov']) . "',
                 sadrzaj = '" . $this->db->escape($data['sadrzaj']) . "',
                 tip = '" . $this->db->escape($data['tip']) . "',
@@ -130,7 +130,7 @@ class ObavijestHelper
 
     public function deleteObavijest($rowid)
     {
-        $sql = "DELETE FROM a_seup_obavijesti
+        $sql = "DELETE FROM " . MAIN_DB_PREFIX . "a_seup_obavijesti
                 WHERE rowid = " . ((int) $rowid);
 
         return $this->db->query($sql) ? true : false;
@@ -139,7 +139,7 @@ class ObavijestHelper
     public function getAllObavijesti()
     {
         $sql = "SELECT rowid, naslov, sadrzaj, tip, vanjski_link, aktivan, datum_kreiranja, datum_izmjene
-                FROM a_seup_obavijesti
+                FROM " . MAIN_DB_PREFIX . "a_seup_obavijesti
                 ORDER BY datum_kreiranja DESC";
 
         $resql = $this->db->query($sql);
@@ -166,7 +166,7 @@ class ObavijestHelper
     public function getObavijest($rowid)
     {
         $sql = "SELECT rowid, naslov, sadrzaj, tip, vanjski_link, aktivan, datum_kreiranja
-                FROM a_seup_obavijesti
+                FROM " . MAIN_DB_PREFIX . "a_seup_obavijesti
                 WHERE rowid = " . ((int) $rowid);
 
         $resql = $this->db->query($sql);

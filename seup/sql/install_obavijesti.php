@@ -53,8 +53,12 @@ if (!file_exists($sql_file)) {
 
 $sql_content = file_get_contents($sql_file);
 
-// NAPOMENA: Koristi fiksni prefix "a_" (admin tablice), bez zamjene
-echo "<h2>Database Prefix: <code>a_</code> (fiksni admin prefix)</h2>";
+// Zamijeni PREFIX_ s pravim Dolibarr prefixom (npr. llx_)
+// Rezultat: PREFIX_a_seup_obavijesti → llx_a_seup_obavijesti
+$sql_content = str_replace('PREFIX_', MAIN_DB_PREFIX, $sql_content);
+
+echo "<h2>Database Prefix: <code>" . MAIN_DB_PREFIX . "</code></h2>";
+echo "<h3>Puni naziv tablice: <code>" . MAIN_DB_PREFIX . "a_seup_obavijesti</code></h3>";
 echo "<hr>";
 
 // Razdvoji SQL naredbe
@@ -96,8 +100,8 @@ echo "<hr>";
 echo "<h2>Provjera Kreiranje Tablica:</h2>";
 
 $tables_to_check = array(
-    'a_seup_obavijesti',
-    'a_seup_obavijesti_procitane'
+    MAIN_DB_PREFIX . 'a_seup_obavijesti',
+    MAIN_DB_PREFIX . 'a_seup_obavijesti_procitane'
 );
 
 foreach ($tables_to_check as $table) {

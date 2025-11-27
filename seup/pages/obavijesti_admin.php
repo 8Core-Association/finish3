@@ -48,9 +48,10 @@ if (!$user->admin) {
     accessforbidden();
 }
 
-// AUTO-KREIRANJE TABLICA AKO NE POSTOJE (fiksni prefix: a_)
-$table_obavijesti = 'a_seup_obavijesti';
-$table_procitane = 'a_seup_obavijesti_procitane';
+// AUTO-KREIRANJE TABLICA AKO NE POSTOJE
+// Naziv tablice: a_seup_obavijesti (dodaje se na Dolibarrov MAIN_DB_PREFIX)
+$table_obavijesti = MAIN_DB_PREFIX . 'a_seup_obavijesti';
+$table_procitane = MAIN_DB_PREFIX . 'a_seup_obavijesti_procitane';
 
 // Provjeri da li tablica postoji
 $sql_check = "SHOW TABLES LIKE '" . $table_obavijesti . "'";
